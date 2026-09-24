@@ -4,7 +4,7 @@ const map=L.map("map").setView([22.57,88.36],11);
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{attribution:"© OpenStreetMap contributors"}).addTo(map);
 const routeLayer=L.layerGroup().addTo(map),markers=L.layerGroup().addTo(map);
 let lastData=null;
-const levelColors={"Free Flow":"#12b76a","Moderate":"#f79009","Heavy":"#f04438","Severe":"#b42318"};
+const levelColors={"Free Flow":"#12b76a","Moderate":"#f79009","Heavy":"#f04438","Severe":"#b42318","Unknown":"#667085"};
 
 async function get(url){
   const response=await fetch(API_BASE+url,{cache:"no-store"});
@@ -17,7 +17,7 @@ async function get(url){
 }
 function setBusy(busy){
   $("predict").disabled=busy;$("refresh").disabled=busy;
-  $("predict").innerHTML=busy?"Checking live traffic…":"Check traffic <span>→</span>";
+  $("predict").innerHTML=busy?"Checking live roads…":"Check traffic <span>→</span>";
 }
 function setLevel(level){
   $("level").textContent=level||"—";
@@ -26,10 +26,10 @@ function setLevel(level){
 }
 function drawRoute(points,origin,destination,level){
   routeLayer.clearLayers();markers.clearLayers();
-  const latlngs=points.map(p=>[p.lat,p.lon]);
-  if(latlngs.length<2)return;
+  const latlngs=(points||[]).map(p=>[p.lat,p.lon]);
+  if(latlngs.length<2)throw new Error("TomTom returned no usable road geometry.");
   const color=levelColors[level]||"#2563eb";
-  L.polyline(latlngs,{color,weight:7,opacity:.85}).addTo(routeLayer);
+  L.polyline(latlngs,{color,weight:8,opacity:.9}).addTo(routeLayer);
   L.circleMarker(latlngs[0],{radius:8,color:"#fff",weight:3,fillColor:"#12b76a",fillOpacity:1}).bindTooltip("FROM: "+origin).addTo(markers);
   L.circleMarker(latlngs[latlngs.length-1],{radius:8,color:"#fff",weight:3,fillColor:"#f04438",fillOpacity:1}).bindTooltip("TO: "+destination).addTo(markers);
   map.fitBounds(L.latLngBounds(latlngs),{padding:[30,30]});
@@ -42,6 +42,20 @@ function renderWeather(w){
   $("rain").textContent=(w.rain_1h??0)+" mm";
   $("wind").textContent=(w.wind_speed??"—")+" m/s";
   if(w.icon)$("weatherIcon").innerHTML='<img alt="" src="https://openweathermap.org/img/wn/'+w.icon+'@2x.png">';
+}
+function renderRoutes(routes){
+  const list=(routes||[]).slice().sort((a,b)=>a.travel_time_min-b.travel_time_min);
+  $("routesList").innerHTML=list.length?list.map((r,i)=>'<div class="route-card '+(r.route_index===0?"selected":"")+'"><div><span class="route-rank">'+(i+1)+'</span><div><strong>'+r.label+'</strong><small>'+r.distance_km+' km • '+r.traffic_status+'</small></div></div><div class="route-time"><strong>'+r.travel_time_min+' min</strong><small>delay '+r.traffic_delay_min+' min</small></div></div>').join(""):'<div class="empty-card">No alternative route was returned by TomTom for this trip.</div>';
+  if(list.length){
+    $("routeBest").textContent="Fastest by current TomTom estimate: "+list[0].label+" • "+list[0].travel_time_min+" min";
+  }else $("routeBest").textContent="Fastest route: unavailable";
+}
+function renderRoads(roads){
+  const list=(roads||[]).slice().sort((a,b)=>{
+    const ar=a.current_speed==null?-1:a.current_speed,br=b.current_speed==null?-1:b.current_speed;
+    return br-ar;
+  });
+  $("roadsList").innerHTML=list.length?'<div class="road-row road-head"><span>Road</span><span>Speed</span><span>Free flow</span><span>Traffic</span></div>'+list.map(r=>'<div class="road-row"><span><strong>'+r.name+'</strong><small>'+(r.road_numbers&&r.road_numbers.length?r.road_numbers.join(" / "):"Road segment")+'</small></span><span>'+r.current_speed+' km/h</span><span>'+r.free_flow_speed+' km/h</span><span class="road-level" style="color:'+(levelColors[r.congestion_level]||"")+'">'+r.congestion_level+'</span></div>').join(""):'<div class="empty-card">TomTom did not return named road guidance for this route.</div>';
 }
 function localKey(o,d){return "trafficpulse:"+o+":"+d}
 function saveLocal(o,d,data){
@@ -74,7 +88,7 @@ async function loadLocations(){
 }
 async function predict(){
   setBusy(true);
-  $("status").textContent="Getting live traffic and weather…";
+  $("status").textContent="Getting real road geometry, alternatives, live road traffic and weather…";
   try{
     const origin=$("origin").value,destination=$("destination").value;
     if(!origin||!destination||origin===destination)throw new Error("Please choose two different locations.");
@@ -84,21 +98,24 @@ async function predict(){
     $("speed").textContent=data.current_speed+" km/h";
     const next=data.forecast&&data.forecast[0];
     $("predicted").textContent=(next?next.predicted_speed:data.predicted_speed)+" km/h";
-    $("predictedLevel").textContent=(next?next.congestion_level:data.congestion_level)+" • 15 min";
+    $("predictedLevel").textContent=(next?next.congestion_level:data.congestion_level)+" • ML forecast";
     $("confidence").textContent=Math.round(data.probability*100)+"%";
     $("distance").textContent=data.distance_km+" km";
     $("travelTime").textContent=data.travel_time_min+" min";
     $("delay").textContent=data.traffic_delay_min+" min";
+    $("routeSource").textContent=data.route_source||"TomTom route";
     renderWeather(data.weather||{});
     drawRoute(data.route_points||[],origin,destination,data.congestion_level);
+    renderRoutes(data.routes||[]);
+    renderRoads(data.roads||[]);
     saveLocal(origin,destination,data);
     let history={items:[]};
     try{history=await get("/api/route-history?origin="+encodeURIComponent(origin)+"&destination="+encodeURIComponent(destination))}catch{}
     renderTimeline(data,history.items||[]);
     renderAlert(data);
-    $("status").textContent="Updated "+new Date(data.updated_at).toLocaleTimeString()+" • Live traffic + weather";
+    $("status").textContent="Updated "+new Date(data.updated_at).toLocaleTimeString()+" • Real road route + live traffic + weather";
   }catch(error){
-    $("status").textContent="Could not get prediction: "+error.message;
+    $("status").textContent="Could not get route: "+error.message;
     setLevel(null);
     $("timelineNote").textContent="Try Refresh again";
   }finally{setBusy(false)}
