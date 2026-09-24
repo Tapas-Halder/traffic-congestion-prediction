@@ -1,60 +1,13 @@
 const API_BASE=window.API_BASE||"";
 const $=id=>document.getElementById(id);
+const DEFAULT_LAT=22.5726,DEFAULT_LON=88.3639;
+const map=L.map("map",{zoomControl:true}).setView([DEFAULT_LAT,DEFAULT_LON],12);
+L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{attribution:"© OpenStreetMap contributors"}).addTo(map);
+let marker=L.circleMarker([DEFAULT_LAT,DEFAULT_LON],{radius:10,weight:3,color:"#fff",fillColor:"#2563eb",fillOpacity:.95}).addTo(map);
+let pulse=L.circle([DEFAULT_LAT,DEFAULT_LON],{radius:500,color:"#2563eb",weight:1,fillOpacity:.08}).addTo(map);
 
-const map=L.map("map").setView([22.5726,88.3639],12);
-L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{attribution:"© OpenStreetMap"}).addTo(map);
-let marker=L.marker([22.5726,88.3639]).addTo(map);
-
-async function get(url,options){
-  const response=await fetch(API_BASE+url,options);
-  if(!response.ok) throw Error(await response.text());
-  return response.json();
-}
-
-async function refresh(){
-  try{
-    const lat=+$("lat").value;
-    const lon=+$("lon").value;
-
-    const [live,weather]=await Promise.all([
-      get("/api/live?lat="+lat+"&lon="+lon),
-      get("/api/weather?lat="+lat+"&lon="+lon)
-    ]);
-
-    if(live.current_speed!=null) $("inputSpeed").value=Math.round(live.current_speed);
-    if(live.free_flow_speed!=null) $("freeFlow").value=Math.round(live.free_flow_speed);
-
-    const weatherImpact=weather.weather_impact??0;
-    $("weather").value=weatherImpact;
-    $("weatherText").textContent=
-      "Weather: "+(weather.description||"—")+
-      " | "+(weather.temperature??"—")+"°C"+
-      " | impact "+weatherImpact+"%";
-
-    const prediction=await get("/api/predict",{
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({
-        latitude:lat,
-        longitude:lon,
-        speed:+$("inputSpeed").value,
-        free_flow_speed:+$("freeFlow").value,
-        weather:weatherImpact
-      })
-    });
-
-    $("level").textContent=prediction.congestion_level;
-    $("speed").textContent=(live.current_speed??$("inputSpeed").value)+" km/h";
-    $("predicted").textContent=prediction.predicted_speed+" km/h";
-    $("confidence").textContent=Math.round(prediction.probability*100)+"%";
-
-    marker.setLatLng([lat,lon]);
-    map.setView([lat,lon],12);
-    $("status").textContent="Live traffic + weather + ML prediction updated.";
-  }catch(error){
-    $("status").textContent="Error: "+error.message;
-  }
-}
-
-$("refresh").onclick=refresh;
-$("predict").onclick=refresh;
+async function get(url,options){const response=await fetch(API_BASE+url,options);if(!response.ok){let msg=await response.text();throw Error(msg||("Request failed: "+response.status))}return response.json()}
+function setLevel(level){$("level").textContent=level||"—";$("levelHint").textContent=level==="Free Flow"?"Road is moving freely":level==="Moderate"?"Moderate traffic":level==="Heavy"?"Heavy traffic":level==="Severe"?"Severe congestion":"Waiting for data";const colors={"Free Flow":"#12b76a","Moderate":"#f79009","Heavy":"#f04438","Severe":"#b42318"};const c=colors[level]||"#2563eb";marker.setStyle({fillColor:c});pulse.setStyle({color:c,fillColor:c})}
+function setBusy(b){$("refresh").disabled=b;$("predict").disabled=b;$("refresh").innerHTML=b?"Loading…":"<span>↻</span> Refresh data"}
+async function refresh(){setBusy(true);$("status").textContent="Fetching live traffic and weather…";try{const lat=Number($("lat").value),lon=Number($("lon").value);if(!Number.isFinite(lat)||lat<-90||lat>90||!Number.isFinite(lon)||lon<-180||lon>180)throw Error("Please enter valid latitude and longitude.");const [live,weather]=await Promise.all([get("/api/live?lat="+lat+"&lon="+lon),get("/api/weather?lat="+lat+"&lon="+lon)]);if(live.current_speed!=null)$("inputSpeed").value=Math.round(live.current_speed);if(live.free_flow_speed!=null)$("freeFlow").value=Math.round(live.free_flow_speed);const impact=weather.weather_impact??0;$("weather").value=impact;$("weatherText").textContent="Weather: "+(weather.description||"—")+" • "+(weather.temperature??"—")+"°C • impact "+impact+"%";const prediction=await get("/api/predict",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({latitude:lat,longitude:lon,speed:Number($("inputSpeed").value),free_flow_speed:Number($("freeFlow").value),weather:impact})});setLevel(prediction.congestion_level);$("speed").textContent=(live.current_speed??$("inputSpeed").value)+" km/h";$("predicted").textContent=prediction.predicted_speed+" km/h";$("confidence").textContent=Math.round(prediction.probability*100)+"%";marker.setLatLng([lat,lon]);pulse.setLatLng([lat,lon]);map.setView([lat,lon],12);$("status").textContent="Updated successfully • Live traffic + weather + ML prediction";}catch(e){$("status").textContent="Error: "+e.message;setLevel(null)}finally{setBusy(false)}}
+$("refresh").onclick=refresh;$("predict").onclick=refresh;
