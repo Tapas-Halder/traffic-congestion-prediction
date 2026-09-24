@@ -3,13 +3,12 @@ services:
     name: traffic-congestion-prediction
     runtime: python
     plan: free
-    rootDir: .
-    buildCommand: pip install -r backend/requirements.txt && python ml/train_model.py
+    buildCommand: pip install --no-cache-dir -r backend/requirements.txt && python ml/train_model.py
     startCommand: cd backend && uvicorn main:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /api/health
     envVars:
       - key: PYTHON_VERSION
-        value: 3.11.11
+        value: "3.11.11"
       - key: TOMTOM_API_KEY
         sync: false
       - key: OPENWEATHER_API_KEY
