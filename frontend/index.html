@@ -1,68 +1,68 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="description" content="Simple Kolkata live traffic prediction">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="Live Kolkata route traffic prediction">
 <title>Kolkata Traffic</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<div class="app-shell">
 <header class="topbar">
-  <div class="brand"><div class="brand-mark">K</div><div><h1>Kolkata Traffic</h1><p>Live traffic & congestion prediction</p></div></div>
-  <button id="refresh" class="btn primary">↻ Refresh</button>
+  <div class="brand"><div class="brand-mark">K</div><div><h1>Kolkata Traffic</h1><p>Live route prediction</p></div></div>
+  <button id="refresh" class="btn secondary">↻ Refresh</button>
 </header>
 
 <main class="container">
-<section class="hero">
-  <div><p class="eyebrow">KOLKATA</p><h2>Know your route<br><span>before you go.</span></h2><p class="hero-copy">Choose where you are going and get current traffic, travel time, weather and the next-hour congestion forecast.</p></div>
-</section>
+  <section class="hero">
+    <p class="eyebrow">LIVE KOLKATA TRAFFIC</p>
+    <h2>Check your route before you go.</h2>
+    <p>Choose your starting point and destination to see live traffic, weather and the expected traffic for the next hour.</p>
+  </section>
 
-<section class="route-search panel">
-  <div class="route-input"><label>FROM</label><select id="origin"></select></div>
-  <div class="swap">→</div>
-  <div class="route-input"><label>TO</label><select id="destination"></select></div>
-  <button id="predict" class="btn predict-btn">Check traffic <span>→</span></button>
-</section>
+  <section class="route-search panel">
+    <div class="route-input"><label>FROM</label><select id="origin"></select></div>
+    <div class="arrow">→</div>
+    <div class="route-input"><label>TO</label><select id="destination"></select></div>
+    <button id="predict" class="btn predict-btn">Check traffic <span>→</span></button>
+  </section>
 
-<section class="stats-grid">
-  <article class="stat-card"><div class="stat-icon traffic">●</div><div><p>Traffic now</p><strong id="level">—</strong><small id="levelHint">Choose a route</small></div></article>
-  <article class="stat-card"><div class="stat-icon speed">↗</div><div><p>Current speed</p><strong id="speed">—</strong><small>Live route speed</small></div></article>
-  <article class="stat-card"><div class="stat-icon forecast">◷</div><div><p>In 15 minutes</p><strong id="predicted">—</strong><small id="predictedLevel">Forecast speed</small></div></article>
-  <article class="stat-card"><div class="stat-icon confidence">✓</div><div><p>Confidence</p><strong id="confidence">—</strong><small>Prediction confidence</small></div></article>
-</section>
+  <section class="stats-grid">
+    <article class="stat-card"><span class="stat-icon traffic">●</span><div><p>Traffic now</p><strong id="level">—</strong><small id="levelHint">Choose a route</small></div></article>
+    <article class="stat-card"><span class="stat-icon speed">↗</span><div><p>Current speed</p><strong id="speed">—</strong><small>Live route speed</small></div></article>
+    <article class="stat-card"><span class="stat-icon forecast">◷</span><div><p>In 15 minutes</p><strong id="predicted">—</strong><small id="predictedLevel">Forecast</small></div></article>
+    <article class="stat-card"><span class="stat-icon confidence">✓</span><div><p>Confidence</p><strong id="confidence">—</strong><small>Prediction confidence</small></div></article>
+  </section>
 
-<section class="dashboard-grid">
-<article class="panel map-panel">
-  <div class="panel-head"><div><h3>Your route</h3><p>Traffic level is shown by route colour.</p></div><span class="map-status"><i></i> Live</span></div>
-  <div id="map"></div>
-  <div class="map-legend"><span><i class="free"></i>Free</span><span><i class="moderate"></i>Moderate</span><span><i class="heavy"></i>Heavy</span><span><i class="severe"></i>Severe</span></div>
-</article>
+  <section class="dashboard-grid">
+    <article class="panel map-panel">
+      <div class="panel-head"><div><h3>Your route</h3><p>Route colour shows traffic level.</p></div><span class="live-badge"><i></i>Live</span></div>
+      <div id="map"></div>
+      <div class="map-legend"><span><i class="free"></i>Free</span><span><i class="moderate"></i>Moderate</span><span><i class="heavy"></i>Heavy</span><span><i class="severe"></i>Severe</span></div>
+    </article>
 
-<aside class="panel result-panel">
-  <div class="panel-head"><div><h3>Route details</h3><p>Live information for your selected route.</p></div></div>
-  <div class="route-summary"><div><span>Distance</span><strong id="distance">—</strong></div><div><span>Travel time</span><strong id="travelTime">—</strong></div><div><span>Extra delay</span><strong id="delay">—</strong></div></div>
-  <div class="weather-box"><div class="weather-icon" id="weatherIcon">☁</div><div><strong id="weatherText">Weather: waiting</strong><small id="weatherDetails">Live weather</small></div></div>
-  <div class="weather-grid"><div><span>Feels like</span><strong id="feelsLike">—</strong></div><div><span>Humidity</span><strong id="humidity">—</strong></div><div><span>Rain</span><strong id="rain">—</strong></div><div><span>Wind</span><strong id="wind">—</strong></div></div>
-  <div id="status" class="status">Choose two locations and check traffic.</div>
-</aside>
-</section>
+    <aside class="panel result-panel">
+      <div class="panel-head"><div><h3>Route details</h3><p>Current information for this route.</p></div></div>
+      <div class="route-summary"><div><span>Distance</span><strong id="distance">—</strong></div><div><span>Travel time</span><strong id="travelTime">—</strong></div><div><span>Extra delay</span><strong id="delay">—</strong></div></div>
+      <div class="weather-box"><div class="weather-icon" id="weatherIcon">☁</div><div><strong id="weatherText">Weather: waiting</strong><small id="weatherDetails">Live weather</small></div></div>
+      <div class="weather-grid"><div><span>Feels like</span><strong id="feelsLike">—</strong></div><div><span>Humidity</span><strong id="humidity">—</strong></div><div><span>Rain</span><strong id="rain">—</strong></div><div><span>Wind</span><strong id="wind">—</strong></div></div>
+      <div id="status" class="status">Choose two locations and check traffic.</div>
+    </aside>
+  </section>
 
-<section class="panel timeline-panel">
-  <div class="panel-head"><div><h3>Traffic forecast</h3><p>See how traffic may change over the next hour.</p></div><span id="timelineNote" class="timeline-note">Waiting for route</span></div>
-  <div class="timeline-grid" id="timeline"></div>
-  <div class="timeline-foot"><span>Past</span><span>Now</span><span>Next hour</span></div>
-</section>
+  <section class="panel timeline-panel">
+    <div class="panel-head"><div><h3>Next hour</h3><p>Expected traffic changes after now.</p></div><span id="timelineNote" class="timeline-note">Waiting for route</span></div>
+    <div class="timeline-grid" id="timeline"></div>
+  </section>
 
-<section class="panel simple-alert">
-  <div class="panel-head"><div><h3>Traffic alert</h3><p>A simple warning based on the forecast.</p></div></div>
-  <div id="alertBox" class="alert-box">Check a route to see alerts.</div>
-</section>
+  <section class="panel alert-panel">
+    <div class="panel-head"><div><h3>Traffic alert</h3><p>Simple warning based on the forecast.</p></div></div>
+    <div id="alertBox" class="alert-box">Check a route to see alerts.</div>
+  </section>
 </main>
 
-<footer><span>Kolkata Traffic</span><span>Live traffic • Weather • Prediction</span></footer>
-</div>
+<footer>Kolkata Traffic • Live traffic • Weather • Prediction</footer>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="app.js"></script>
 </body>
