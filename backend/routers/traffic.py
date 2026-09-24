@@ -1,5 +1,5 @@
+import asyncio
 from datetime import datetime, timezone
-from math import radians, sin, cos, sqrt, atan2
 from fastapi import APIRouter, HTTPException
 from schemas.traffic import PredictionRequest, PredictionResponse
 from services.predictor import predictor
@@ -29,12 +29,94 @@ KOLKATA_LOCATIONS = {
     "Rajarhat": (22.6215, 88.4560),
 }
 
-def straight_distance_km(a, b):
-    lat1, lon1 = map(radians, a)
-    lat2, lon2 = map(radians, b)
-    dlat, dlon = lat2 - lat1, lon2 - lon1
-    h = sin(dlat / 2) ** 2 + cos(lat1) * cos(lat2) * sin(dlon / 2) ** 2
-    return 6371 * 2 * atan2(sqrt(h), sqrt(max(1 - h, 0)))
+def route_points(route):
+    points = []
+    for leg in route.get("legs", []):
+        for point in leg.get("points", []):
+            if "latitude" in point and "longitude" in point:
+                points.append({"lat": point["latitude"], "lon": point["longitude"]})
+    return points
+
+def route_summary(route):
+    summary = route.get("summary", {})
+    distance_m = max(float(summary.get("lengthInMeters") or 0), 1)
+    travel_time = max(float(summary.get("travelTimeInSeconds") or 0), 1)
+    delay = max(float(summary.get("trafficDelayInSeconds") or 0), 0)
+    no_traffic = max(float(summary.get("noTrafficTravelTimeInSeconds") or 0), 1)
+    return distance_m, travel_time, delay, no_traffic
+
+def congestion_level(speed, free_flow):
+    ratio = speed / max(free_flow, 1)
+    if ratio >= 0.80:
+        return "Free Flow"
+    if ratio >= 0.60:
+        return "Moderate"
+    if ratio >= 0.40:
+        return "Heavy"
+    return "Severe"
+
+def extract_road_candidates(route):
+    guidance = route.get("guidance", {})
+    instructions = guidance.get("instructions", []) or []
+    roads = []
+    seen = set()
+
+    for instruction in instructions:
+        street = instruction.get("street") or ""
+        road_numbers = instruction.get("roadNumbers") or []
+        name = street.strip() if isinstance(street, str) else ""
+        if not name and road_numbers:
+            name = " / ".join(str(x) for x in road_numbers)
+        if not name:
+            continue
+
+        key = name.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+
+        point = instruction.get("point") or {}
+        if "latitude" in point and "longitude" in point:
+            roads.append({
+                "name": name,
+                "road_numbers": road_numbers,
+                "lat": float(point["latitude"]),
+                "lon": float(point["longitude"]),
+            })
+
+    # Keep the UI fast while still showing the main roads used by the route.
+    return roads[:8]
+
+async def road_traffic(roads):
+    async def one(road):
+        try:
+            data = (await get_traffic(road["lat"], road["lon"])).get("flowSegmentData", {})
+            speed = float(data.get("currentSpeed") or 0)
+            free = float(data.get("freeFlowSpeed") or 0)
+            if speed <= 0 or free <= 0:
+                raise RuntimeError("No speed data")
+            return {
+                "name": road["name"],
+                "road_numbers": road["road_numbers"],
+                "current_speed": round(speed, 1),
+                "free_flow_speed": round(free, 1),
+                "congestion_level": congestion_level(speed, free),
+                "confidence": data.get("confidence"),
+                "road_closure": bool(data.get("roadClosure", False)),
+            }
+        except Exception:
+            return {
+                "name": road["name"],
+                "road_numbers": road["road_numbers"],
+                "current_speed": None,
+                "free_flow_speed": None,
+                "congestion_level": "Unknown",
+                "confidence": None,
+                "road_closure": False,
+            }
+
+    results = await asyncio.gather(*(one(r) for r in roads))
+    return [x for x in results if x["current_speed"] is not None]
 
 @router.get("/health")
 def health():
@@ -96,65 +178,57 @@ async def route_predict(origin: str, destination: str):
     now = datetime.now(timezone.utc)
 
     try:
-        flow = (await get_traffic(*start)).get("flowSegmentData", {})
-        live_speed = float(flow.get("currentSpeed") or 0)
-        live_free_flow = float(flow.get("freeFlowSpeed") or 0)
-    except Exception as exc:
-        raise HTTPException(502, f"TomTom traffic API error: {exc}")
-
-    if live_speed <= 0 or live_free_flow <= 0:
-        raise HTTPException(502, "TomTom returned no live speed. Please try again.")
-
-    try:
         route_data = await get_route(start, end)
-        route = (route_data.get("routes") or [None])[0]
-        if not route:
-            raise RuntimeError("TomTom returned no route.")
+    except Exception as exc:
+        raise HTTPException(
+            502,
+            f"TomTom route service error: {exc}. The map will not draw a fake straight line."
+        )
 
-        summary = route.get("summary", {})
-        distance_m = max(float(summary.get("lengthInMeters") or 0), 1)
-        travel_time = max(float(summary.get("travelTimeInSeconds") or 0), 1)
-        traffic_delay = max(float(summary.get("trafficDelayInSeconds") or 0), 0)
-        no_traffic_time = max(float(summary.get("noTrafficTravelTimeInSeconds") or 0), 1)
+    routes = route_data.get("routes") or []
+    if not routes:
+        raise HTTPException(502, "TomTom returned no drivable route.")
 
-        points = []
-        for leg in route.get("legs", []):
-            for point in leg.get("points", []):
-                if "latitude" in point and "longitude" in point:
-                    points.append({"lat": point["latitude"], "lon": point["longitude"]})
+    # TomTom returns routes in decreasing optimality for this request.
+    route_cards = []
+    for index, route in enumerate(routes):
+        distance_m, travel_time, delay, no_traffic = route_summary(route)
+        route_cards.append({
+            "route_index": index,
+            "label": "Fastest" if index == 0 else f"Alternative {index}",
+            "distance_km": round(distance_m / 1000, 2),
+            "travel_time_min": round(travel_time / 60, 1),
+            "traffic_delay_min": round(delay / 60, 1),
+            "no_traffic_time_min": round(no_traffic / 60, 1),
+            "traffic_status": "Delayed" if delay > 60 else "Moving",
+            "route_points": route_points(route),
+        })
 
-        current_speed = live_speed
-        free_flow_speed = max(live_free_flow, (distance_m / no_traffic_time) * 3.6)
-    except Exception:
-        distance_m = straight_distance_km(start, end) * 1000
-        current_speed = live_speed
-        free_flow_speed = live_free_flow
-        travel_time = distance_m / max(current_speed / 3.6, 1)
-        no_traffic_time = distance_m / max(free_flow_speed / 3.6, 1)
-        traffic_delay = max(0, travel_time - no_traffic_time)
-        points = [
-            {"lat": start[0], "lon": start[1]},
-            {"lat": end[0], "lon": end[1]},
-        ]
+    # The first route is the fastest route returned by TomTom for routeType=fastest.
+    selected = routes[0]
+    distance_m, travel_time, traffic_delay, no_traffic_time = route_summary(selected)
+
+    road_candidates = extract_road_candidates(selected)
+    road_data = await road_traffic(road_candidates)
+
+    # Prefer actual road-level traffic at the first named road. If unavailable,
+    # use the route summary's traffic-adjusted speed.
+    if road_data:
+        current_speed = road_data[0]["current_speed"]
+        free_flow_speed = road_data[0]["free_flow_speed"]
+    else:
+        current_speed = (distance_m / travel_time) * 3.6
+        free_flow_speed = (distance_m / no_traffic_time) * 3.6
 
     try:
         weather = await get_weather(*end)
         weather_status = "live"
     except Exception:
         weather = {
-            "temperature": 27,
-            "feels_like": 27,
-            "humidity": 70,
-            "pressure": 1012,
-            "description": "Weather data unavailable",
-            "icon": None,
-            "clouds": 0,
-            "rain_1h": 0,
-            "snow_1h": 0,
-            "wind_speed": 0,
-            "visibility": 10000,
-            "weather_impact": 0,
-            "observed_at": None,
+            "temperature": 27, "feels_like": 27, "humidity": 70, "pressure": 1012,
+            "description": "Weather data unavailable", "icon": None, "clouds": 0,
+            "rain_1h": 0, "snow_1h": 0, "wind_speed": 0, "visibility": 10000,
+            "weather_impact": 0, "observed_at": None,
         }
         weather_status = "fallback"
 
@@ -166,20 +240,12 @@ async def route_predict(origin: str, destination: str):
 
     local_now = datetime.now()
     level, probability, predicted_speed = predictor.predict_current(
-        current_speed,
-        max(free_flow_speed, current_speed),
-        local_now.hour,
-        weather,
-        history,
-        local_now.weekday(),
+        current_speed, max(free_flow_speed, current_speed), local_now.hour,
+        weather, history, local_now.weekday()
     )
     forecast = predictor.forecast(
-        current_speed,
-        max(free_flow_speed, current_speed),
-        local_now.hour,
-        weather,
-        history,
-        local_now.weekday(),
+        current_speed, max(free_flow_speed, current_speed), local_now.hour,
+        weather, history, local_now.weekday()
     )
 
     result = {
@@ -196,7 +262,11 @@ async def route_predict(origin: str, destination: str):
         "weather": weather,
         "weather_status": weather_status,
         "forecast": forecast,
-        "route_points": points,
+        "route_points": route_points(selected),
+        "roads": road_data,
+        "routes": route_cards,
+        "selected_route_index": 0,
+        "route_source": "TomTom Routing + Traffic",
         "updated_at": now.isoformat(),
     }
 
