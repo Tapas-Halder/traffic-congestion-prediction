@@ -6,7 +6,7 @@
 <meta name="description" content="Live Kolkata route traffic prediction">
 <title>Kolkata Traffic</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<link rel="stylesheet" href="style.css?v=4">
+<link rel="stylesheet" href="style.css?v=5">
 </head>
 <body>
 <header class="topbar">
@@ -14,7 +14,7 @@
   <button id="refresh" class="btn secondary">↻ Refresh</button>
 </header>
 
-<main class="container">
+<div id="predictionLoader" class="prediction-loader" aria-hidden="true"><div class="loader-card"><div class="spinner"></div><h3>Predicting traffic…</h3><p id="loaderText">Connecting to TomTom, weather and ML model…</p><div class="loader-steps"><span>Route</span><i>→</i><span>Live traffic</span><i>→</i><span>ML prediction</span></div></div></div>\n\n<main class="container">
   <section class="hero">
     <p class="eyebrow">LIVE KOLKATA TRAFFIC</p>
     <h2>Compare real road routes before you go.</h2>
@@ -75,6 +75,6 @@
 
 <footer>Kolkata Traffic • TomTom traffic & routes • OpenWeather • ML prediction</footer>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="app.js?v=4"></script>
+<script src="app.js?v=5"></script>
 </body>
 </html>
