@@ -9,7 +9,7 @@ Simple final-year project based on the provided project guidelines.
 4. External APIs: TomTom Traffic API + OpenWeather API
 
 ## Database
-A database is **not required** for the basic project because the main requirement is live traffic data -> preprocessing/features -> ML prediction -> dashboard. Removing PostgreSQL makes the project easier to understand, run and deploy. Prediction results are returned directly by FastAPI and are not permanently stored.
+A database is **not required** for the basic project because the main requirement is live traffic data -> preprocessing/features -> ML prediction -> dashboard. Prediction results are returned directly by FastAPI and are not permanently stored.
 
 ## Flow
 TomTom Traffic API + Weather API
@@ -27,7 +27,7 @@ HTML/CSS/JS Dashboard
 ## Local setup
 Create `backend/.env` from `.env.example`:
 
-```
+```text
 TOMTOM_API_KEY=your_key
 OPENWEATHER_API_KEY=your_key
 FRONTEND_URL=*
@@ -35,7 +35,7 @@ FRONTEND_URL=*
 
 Install and run:
 
-```
+```bash
 cd backend
 pip install -r requirements.txt
 cd ..
@@ -44,17 +44,17 @@ cd backend
 uvicorn main:app --reload
 ```
 
-Open the frontend and set the Render/backend URL in `frontend/app.js`.
+Open `http://127.0.0.1:8000/` for the full website and `http://127.0.0.1:8000/docs` for the API documentation.
 
-## Render
-Use `render.yaml`. Set these environment variables in Render:
-- TOMTOM_API_KEY
-- OPENWEATHER_API_KEY
-- FRONTEND_URL
+## Single Render deployment
+The full website is deployed as **one Render Web Service**. FastAPI serves the frontend files, so Vercel is not required.
 
-No PostgreSQL/database setup is needed.
+Use `render.yaml` and set these Render environment variables:
+- `TOMTOM_API_KEY`
+- `OPENWEATHER_API_KEY`
 
-## Vercel
-Deploy the `frontend` folder. After Render gives the backend URL, replace the placeholder URL in `frontend/app.js`.
+`FRONTEND_URL` is already configured as `*` in `render.yaml` for the simple single-service setup.
+
+After deployment, the Render URL opens the dashboard directly. No frontend URL needs to be added to `frontend/app.js` because it uses the same-origin API.
 
 Never commit `.env` or API keys.
