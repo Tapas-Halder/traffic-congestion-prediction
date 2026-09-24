@@ -6,7 +6,7 @@
 <meta name="description" content="Live Kolkata route traffic prediction">
 <title>Kolkata Traffic</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<link rel="stylesheet" href="style.css?v=2">
+<link rel="stylesheet" href="style.css?v=3">
 </head>
 <body>
 <header class="topbar">
@@ -17,8 +17,8 @@
 <main class="container">
   <section class="hero">
     <p class="eyebrow">LIVE KOLKATA TRAFFIC</p>
-    <h2>Check your route before you go.</h2>
-    <p>Choose your starting point and destination to see live traffic, weather and the expected traffic for the next hour.</p>
+    <h2>Compare real road routes before you go.</h2>
+    <p>TomTom provides the drivable route geometry, road names, live road traffic and alternative routes. The ML model forecasts congestion for the selected route.</p>
   </section>
 
   <section class="route-search panel">
@@ -30,40 +30,51 @@
 
   <section class="stats-grid">
     <article class="stat-card"><span class="stat-icon traffic">●</span><div><p>Traffic now</p><strong id="level">—</strong><small id="levelHint">Choose a route</small></div></article>
-    <article class="stat-card"><span class="stat-icon speed">↗</span><div><p>Current speed</p><strong id="speed">—</strong><small>Live route speed</small></div></article>
-    <article class="stat-card"><span class="stat-icon forecast">◷</span><div><p>In 15 minutes</p><strong id="predicted">—</strong><small id="predictedLevel">Forecast</small></div></article>
-    <article class="stat-card"><span class="stat-icon confidence">✓</span><div><p>Confidence</p><strong id="confidence">—</strong><small>Prediction confidence</small></div></article>
+    <article class="stat-card"><span class="stat-icon speed">↗</span><div><p>Current road speed</p><strong id="speed">—</strong><small>Live TomTom traffic</small></div></article>
+    <article class="stat-card"><span class="stat-icon forecast">◷</span><div><p>In 15 minutes</p><strong id="predicted">—</strong><small id="predictedLevel">ML forecast</small></div></article>
+    <article class="stat-card"><span class="stat-icon confidence">✓</span><div><p>Prediction confidence</p><strong id="confidence">—</strong><small>Random Forest probability</small></div></article>
   </section>
 
   <section class="dashboard-grid">
     <article class="panel map-panel">
-      <div class="panel-head"><div><h3>Your route</h3><p>Route colour shows traffic level.</p></div><span class="live-badge"><i></i>Live</span></div>
+      <div class="panel-head"><div><h3>Real road route</h3><p>The blue/traffic line follows the TomTom road network — no straight-line fallback.</p></div><span class="live-badge"><i></i>Live</span></div>
       <div id="map"></div>
       <div class="map-legend"><span><i class="free"></i>Free</span><span><i class="moderate"></i>Moderate</span><span><i class="heavy"></i>Heavy</span><span><i class="severe"></i>Severe</span></div>
     </article>
 
     <aside class="panel result-panel">
-      <div class="panel-head"><div><h3>Route details</h3><p>Current information for this route.</p></div></div>
+      <div class="panel-head"><div><h3>Selected route</h3><p id="routeSource">Waiting for live route data.</p></div></div>
       <div class="route-summary"><div><span>Distance</span><strong id="distance">—</strong></div><div><span>Travel time</span><strong id="travelTime">—</strong></div><div><span>Extra delay</span><strong id="delay">—</strong></div></div>
+      <div class="route-best" id="routeBest">Fastest route: —</div>
       <div class="weather-box"><div class="weather-icon" id="weatherIcon">☁</div><div><strong id="weatherText">Weather: waiting</strong><small id="weatherDetails">Live weather</small></div></div>
       <div class="weather-grid"><div><span>Feels like</span><strong id="feelsLike">—</strong></div><div><span>Humidity</span><strong id="humidity">—</strong></div><div><span>Rain</span><strong id="rain">—</strong></div><div><span>Wind</span><strong id="wind">—</strong></div></div>
       <div id="status" class="status">Choose two locations and check traffic.</div>
     </aside>
   </section>
 
+  <section class="panel alternatives-panel">
+    <div class="panel-head"><div><h3>Routes compared</h3><p>TomTom alternatives are sorted by current estimated travel time.</p></div></div>
+    <div id="routesList" class="route-cards"><div class="empty-card">Check a route to compare available road routes.</div></div>
+  </section>
+
+  <section class="panel roads-panel">
+    <div class="panel-head"><div><h3>Roads on the route</h3><p>Live traffic sampled at named roads from the TomTom route guidance.</p></div></div>
+    <div id="roadsList" class="road-table"><div class="empty-card">Road names and live traffic will appear here.</div></div>
+  </section>
+
   <section class="panel timeline-panel">
-    <div class="panel-head"><div><h3>Next hour</h3><p>Expected traffic changes after now.</p></div><span id="timelineNote" class="timeline-note">Waiting for route</span></div>
+    <div class="panel-head"><div><h3>Next hour</h3><p>ML forecast for the selected route.</p></div><span id="timelineNote" class="timeline-note">Waiting for route</span></div>
     <div class="timeline-grid" id="timeline"></div>
   </section>
 
   <section class="panel alert-panel">
-    <div class="panel-head"><div><h3>Traffic alert</h3><p>Simple warning based on the forecast.</p></div></div>
+    <div class="panel-head"><div><h3>Traffic alert</h3><p>Warning based on the next-hour forecast.</p></div></div>
     <div id="alertBox" class="alert-box">Check a route to see alerts.</div>
   </section>
 </main>
 
-<footer>Kolkata Traffic • Live traffic • Weather • Prediction</footer>
+<footer>Kolkata Traffic • TomTom traffic & routes • OpenWeather • ML prediction</footer>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="app.js?v=2"></script>
+<script src="app.js?v=3"></script>
 </body>
 </html>
