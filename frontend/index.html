@@ -1,39 +1,77 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Traffic Congestion Prediction</title>
-  <link rel="stylesheet" href="style.css">
+  <meta name="description" content="Real-time traffic congestion prediction dashboard">
+  <title>TrafficPulse — Congestion Prediction</title>
+  <link rel="preconnect" href="https://unpkg.com">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <header>
-    <h1>Traffic Congestion Prediction</h1>
-    <button id="refresh">Refresh Live Data</button>
-  </header>
-  <main>
-    <div class="grid">
-      <div>Congestion<strong id="level">—</strong></div>
-      <div>Current speed<strong id="speed">—</strong></div>
-      <div>Predicted speed<strong id="predicted">—</strong></div>
-      <div>Confidence<strong id="confidence">—</strong></div>
-    </div>
-    <section>
-      <div id="map"></div>
-      <aside>
-        <h2>Prediction</h2>
-        <label>Latitude<input id="lat" value="22.5726"></label>
-        <label>Longitude<input id="lon" value="88.3639"></label>
-        <label>Speed<input id="inputSpeed" value="35"></label>
-        <label>Free-flow<input id="freeFlow" value="50"></label>
-        <label>Weather impact %<input id="weather" value="0" readonly></label>
-        <button id="predict">Predict</button>
-        <p id="weatherText">Weather: —</p>
-        <p id="status">Ready.</p>
-      </aside>
-    </section>
-  </main>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark">TP</div>
+        <div><h1>TrafficPulse</h1><p>Intelligent traffic prediction</p></div>
+      </div>
+      <div class="top-actions">
+        <span class="live-pill"><i></i> Live system</span>
+        <button id="refresh" class="btn primary"><span>↻</span> Refresh data</button>
+      </div>
+    </header>
+
+    <main class="container">
+      <section class="hero">
+        <div>
+          <p class="eyebrow">SMART CITY • REAL-TIME ANALYTICS</p>
+          <h2>Traffic congestion<br><span>prediction dashboard</span></h2>
+          <p class="hero-copy">Combine live traffic, weather and machine learning to understand current road conditions and predict congestion.</p>
+        </div>
+        <div class="hero-badge"><strong>ML</strong><span>Random Forest<br>prediction engine</span></div>
+      </section>
+
+      <section class="stats-grid" aria-label="Traffic summary">
+        <article class="stat-card"><div class="stat-icon traffic">⌁</div><div><p>Congestion</p><strong id="level">—</strong><small id="levelHint">Waiting for data</small></div></article>
+        <article class="stat-card"><div class="stat-icon speed">↗</div><div><p>Current speed</p><strong id="speed">—</strong><small>Live traffic</small></div></article>
+        <article class="stat-card"><div class="stat-icon forecast">◷</div><div><p>Predicted speed</p><strong id="predicted">—</strong><small>ML estimate</small></div></article>
+        <article class="stat-card"><div class="stat-icon confidence">✓</div><div><p>Confidence</p><strong id="confidence">—</strong><small>Model probability</small></div></article>
+      </section>
+
+      <section class="dashboard-grid">
+        <article class="panel map-panel">
+          <div class="panel-head">
+            <div><h3>Live traffic map</h3><p>Choose a location to inspect the road segment.</p></div>
+            <span class="map-status"><i></i> Live</span>
+          </div>
+          <div id="map"></div>
+          <div class="map-legend"><span><i class="free"></i>Free flow</span><span><i class="moderate"></i>Moderate</span><span><i class="heavy"></i>Heavy</span><span><i class="severe"></i>Severe</span></div>
+        </article>
+
+        <aside class="panel control-panel">
+          <div class="panel-head"><div><h3>Prediction controls</h3><p>Set the road location and inputs.</p></div></div>
+          <div class="form-grid">
+            <label>Latitude<input id="lat" type="number" step="any" value="22.5726"></label>
+            <label>Longitude<input id="lon" type="number" step="any" value="88.3639"></label>
+          </div>
+          <div class="input-row"><label>Current speed<input id="inputSpeed" type="number" min="0" value="35"><span>km/h</span></label><label>Free-flow speed<input id="freeFlow" type="number" min="1" value="50"><span>km/h</span></label></div>
+          <label>Weather impact<input id="weather" type="number" value="0" readonly><span class="input-suffix">%</span></label>
+          <button id="predict" class="btn predict-btn">Run prediction <span>→</span></button>
+          <div class="weather-box"><div class="weather-icon">☁</div><div><strong id="weatherText">Weather: waiting for live data</strong><small>OpenWeather conditions</small></div></div>
+          <div id="status" class="status" role="status">Ready. Click “Refresh data” to load live traffic.</div>
+        </aside>
+      </section>
+
+      <section class="info-grid">
+        <article class="panel info-card"><span class="info-number">01</span><div><h3>Live traffic</h3><p>Traffic speed and free-flow speed are collected from the connected traffic API.</p></div></article>
+        <article class="panel info-card"><span class="info-number">02</span><div><h3>Feature engineering</h3><p>Speed ratio, hour and weather impact become inputs for the prediction model.</p></div></article>
+        <article class="panel info-card"><span class="info-number">03</span><div><h3>Congestion forecast</h3><p>The Random Forest model returns congestion level, predicted speed and confidence.</p></div></article>
+      </section>
+    </main>
+
+    <footer><span>TrafficPulse</span><span>Traffic Congestion Prediction System • ML + FastAPI + Live APIs</span></footer>
+  </div>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="app.js"></script>
 </body>
