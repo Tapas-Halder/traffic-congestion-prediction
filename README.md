@@ -1,23 +1,60 @@
 # Traffic Congestion Prediction System
 
-End-to-end traffic congestion prediction system with HTML/CSS/JS frontend, FastAPI backend, PostgreSQL/SQLite database, ML Random Forest baseline, TomTom Traffic API and OpenWeather API.
+Simple final-year project based on the provided project guidelines.
 
-## Architecture
-Frontend -> FastAPI -> external traffic/weather APIs + database -> ML prediction
+## Parts
+1. Frontend: HTML, CSS, JavaScript + Leaflet map
+2. Backend: FastAPI
+3. ML: Random Forest
+4. External APIs: TomTom Traffic API + OpenWeather API
 
-The implementation follows the project guidelines: Python scripts only, modular folders, configuration through environment variables, and no committed secrets.
+## Database
+A database is **not required** for the basic project because the main requirement is live traffic data -> preprocessing/features -> ML prediction -> dashboard. Removing PostgreSQL makes the project easier to understand, run and deploy. Prediction results are returned directly by FastAPI and are not permanently stored.
 
-## Local run
-1. Backend: `cd backend && python -m venv .venv && pip install -r requirements.txt`
-2. Copy `.env.example` to `.env` and add API keys.
-3. Train: `python ml/train_model.py`
-4. Start: `cd backend && uvicorn main:app --reload`
-5. Open `frontend/index.html` and change API_BASE in `frontend/app.js` to the backend URL.
+## Flow
+TomTom Traffic API + Weather API
+        ↓
+FastAPI
+        ↓
+Feature preparation
+        ↓
+Random Forest ML
+        ↓
+Congestion Level + Predicted Speed
+        ↓
+HTML/CSS/JS Dashboard
+
+## Local setup
+Create `backend/.env` from `.env.example`:
+
+```
+TOMTOM_API_KEY=your_key
+OPENWEATHER_API_KEY=your_key
+FRONTEND_URL=*
+```
+
+Install and run:
+
+```
+cd backend
+pip install -r requirements.txt
+cd ..
+python ml/train_model.py
+cd backend
+uvicorn main:app --reload
+```
+
+Open the frontend and set the Render/backend URL in `frontend/app.js`.
 
 ## Render
-The repository contains `render.yaml`. Create the Blueprint from GitHub, then set TOMTOM_API_KEY, OPENWEATHER_API_KEY and FRONTEND_URL in the Render service environment. Render creates PostgreSQL and DATABASE_URL automatically from the blueprint.
+Use `render.yaml`. Set these environment variables in Render:
+- TOMTOM_API_KEY
+- OPENWEATHER_API_KEY
+- FRONTEND_URL
+
+No PostgreSQL/database setup is needed.
 
 ## Vercel
-Import the `frontend` directory as a Vercel project. After the Render backend is live, replace YOUR-RENDER-SERVICE.onrender.com in `frontend/app.js` with the real Render URL.
+Deploy the `frontend` folder. After Render gives the backend URL, replace the placeholder URL in `frontend/app.js`.
 
-Never commit `.env` or real API keys.
+Never commit `.env` or API keys.
