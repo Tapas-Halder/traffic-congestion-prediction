@@ -25,16 +25,9 @@ def make_historical_data():
     for route_id in range(8):
         base_free = float(rng.uniform(42, 68))
         total = 20 * 288
+        speeds, rains, temperatures, visibilities = [], [], [], []
+        events, hours, dows = [], [], []
 
-        speeds = []
-        rains = []
-        temperatures = []
-        visibilities = []
-        events = []
-        hours = []
-        dows = []
-
-        # First create the complete 5-minute sensor-style history.
         for i in range(total):
             hour = (i // 12) % 24
             dow = (i // (12 * 24)) % 7
@@ -43,30 +36,18 @@ def make_historical_data():
 
             morning = np.exp(-((t - 8.5) / 1.7) ** 2)
             evening = np.exp(-((t - 18.5) / 2.0) ** 2)
-
             rain = max(0.0, float(rng.normal(1.2, 0.9))) if rng.random() < 0.22 else 0.0
             heavy_rain = int(rain >= 5)
             event = int(rng.random() < 0.025)
 
-            # Rain can reduce demand slightly, but heavy rain also reduces safe speed.
             demand_factor = 0.36 * morning + 0.40 * evening + 0.10 * event
             rain_penalty = min(0.32, 0.018 * rain + 0.09 * heavy_rain)
             rain_relief = min(0.08, 0.012 * rain)
+            ratio = np.clip(0.98 - demand_factor - rain_penalty + rain_relief, 0.16, 1.04)
 
-            ratio = np.clip(
-                0.98 - demand_factor - rain_penalty + rain_relief,
-                0.16, 1.04
-            )
-            speed = float(np.clip(
-                base_free * ratio + rng.normal(0, 2.2),
-                7, base_free * 1.05
-            ))
-
+            speed = float(np.clip(base_free * ratio + rng.normal(0, 2.2), 7, base_free * 1.05))
             temperature = 27 + 4 * np.sin((t - 14) * np.pi / 12) + rng.normal(0, 0.8)
-            visibility = max(
-                1000,
-                10000 - rain * 1400 - event * 500 + rng.normal(0, 250)
-            )
+            visibility = max(1000, 10000 - rain * 1400 - event * 500 + rng.normal(0, 250))
 
             speeds.append(speed)
             rains.append(rain)
@@ -76,7 +57,6 @@ def make_historical_data():
             hours.append(hour)
             dows.append(dow)
 
-        # Build samples where the target is genuinely 15 minutes ahead (3 x 5 min).
         for i in range(12, total - 3):
             speed = speeds[i]
             free = base_free
@@ -103,13 +83,10 @@ def make_historical_data():
                 float(temperatures[i]), rain, visibility, events[i],
                 1 - ratio, ratio, heavy_rain, weather_penalty
             ]
-
-            future_speed = float(speeds[i + 3])
-            rows.append((row, future_speed))
+            rows.append((row, float(speeds[i + 3])))
 
     X = np.asarray([r[0] for r in rows], dtype=float)
     y_speed = np.asarray([r[1] for r in rows], dtype=float)
-
     future_ratio = y_speed / np.maximum(X[:, 1], 1)
     y_level = np.select(
         [future_ratio >= 0.80, future_ratio >= 0.60, future_ratio >= 0.40],
@@ -120,8 +97,14 @@ def make_historical_data():
 
 X, y_speed, y_level = make_historical_data()
 
+# A rare synthetic class can contain only one sample. In that case
+# stratified splitting is impossible, so use a normal random split.
+unique, counts = np.unique(y_level, return_counts=True)
+can_stratify = len(unique) > 1 and counts.min() >= 2
+stratify_target = y_level if can_stratify else None
+
 X_train, X_test, y_speed_train, y_speed_test, y_level_train, y_level_test = train_test_split(
-    X, y_speed, y_level, test_size=0.2, random_state=42, stratify=y_level
+    X, y_speed, y_level, test_size=0.2, random_state=42, stratify=stratify_target
 )
 
 regressor = RandomForestRegressor(
@@ -149,7 +132,8 @@ metrics = {
     "f1_weighted": round(float(f1_score(y_level_test, pred_level, average="weighted")), 3),
     "features": FEATURES,
     "target_horizon_minutes": 15,
-    "data_note": "Synthetic sensor-style baseline; replace with real Kolkata historical traffic data for real-world validation."
+    "data_note": "Synthetic sensor-style baseline; replace with real Kolkata historical traffic data for real-world validation.",
+    "stratified_split": bool(can_stratify)
 }
 
 joblib.dump(
@@ -157,8 +141,5 @@ joblib.dump(
     ARTIFACTS / "traffic_models.joblib",
     compress=3
 )
-(ARTIFACTS / "metrics.json").write_text(
-    json.dumps(metrics, indent=2), encoding="utf-8"
-)
-
+(ARTIFACTS / "metrics.json").write_text(json.dumps(metrics, indent=2), encoding="utf-8")
 print(json.dumps(metrics, indent=2))
