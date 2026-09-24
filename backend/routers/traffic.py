@@ -96,8 +96,20 @@ async def route_predict(origin: str, destination: str):
     end = KOLKATA_LOCATIONS[destination]
     now = datetime.now(timezone.utc)
 
+    # Live traffic speed is the critical prediction input.
     try:
-        # Route API gives the real road route, traffic delay and travel time.
+        flow = (await get_traffic(*start)).get("flowSegmentData", {})
+        live_speed = float(flow.get("currentSpeed") or 0)
+        live_free_flow = float(flow.get("freeFlowSpeed") or 0)
+    except Exception as exc:
+        raise HTTPException(502, f"TomTom traffic API error: {exc}")
+
+    if live_speed <= 0 or live_free_flow <= 0:
+        raise HTTPException(502, "TomTom returned no live speed. Please try again.")
+
+    # Route details are helpful for the map, but prediction must continue
+    # even if the routing endpoint has a temporary problem.
+    try:
         route_data = await get_route(start, end)
         route = (route_data.get("routes") or [None])[0]
         if not route:
@@ -107,36 +119,20 @@ async def route_predict(origin: str, destination: str):
         distance_m = max(float(summary.get("lengthInMeters") or 0), 1)
         travel_time = max(float(summary.get("travelTimeInSeconds") or 0), 1)
         traffic_delay = max(float(summary.get("trafficDelayInSeconds") or 0), 0)
-        no_traffic_time = max(
-            float(summary.get("noTrafficTravelTimeInSeconds") or 0),
-            1,
-        )
-
-        current_speed = (distance_m / travel_time) * 3.6
-        free_flow_speed = (distance_m / no_traffic_time) * 3.6
+        no_traffic_time = max(float(summary.get("noTrafficTravelTimeInSeconds") or 0), 1)
 
         points = []
         for leg in route.get("legs", []):
             for point in leg.get("points", []):
                 if "latitude" in point and "longitude" in point:
-                    points.append({
-                        "lat": point["latitude"],
-                        "lon": point["longitude"],
-                    })
+                    points.append({"lat": point["latitude"], "lon": point["longitude"]})
 
+        current_speed = live_speed
+        free_flow_speed = max(live_free_flow, (distance_m / no_traffic_time) * 3.6)
     except Exception:
-        # If routing is temporarily unavailable, still make the prediction
-        # from TomTom live traffic at the start point instead of breaking the site.
-        flow = (await get_traffic(*start)).get("flowSegmentData", {})
-        current_speed = float(flow.get("currentSpeed") or 0)
-        free_flow_speed = float(flow.get("freeFlowSpeed") or 0)
-        if current_speed <= 0 or free_flow_speed <= 0:
-            raise HTTPException(
-                502,
-                "Live traffic is temporarily unavailable. Please try Refresh again."
-            )
-
         distance_m = straight_distance_km(start, end) * 1000
+        current_speed = live_speed
+        free_flow_speed = live_free_flow
         travel_time = distance_m / max(current_speed / 3.6, 1)
         no_traffic_time = distance_m / max(free_flow_speed / 3.6, 1)
         traffic_delay = max(0, travel_time - no_traffic_time)
@@ -145,10 +141,28 @@ async def route_predict(origin: str, destination: str):
             {"lat": end[0], "lon": end[1]},
         ]
 
+    # Weather improves the model, but a temporary weather API failure should
+    # not stop the traffic prediction.
     try:
         weather = await get_weather(*end)
-    except Exception as exc:
-        raise HTTPException(502, f"Weather service error: {exc}")
+        weather_status = "live"
+    except Exception:
+        weather = {
+            "temperature": 27,
+            "feels_like": 27,
+            "humidity": 70,
+            "pressure": 1012,
+            "description": "Weather data unavailable",
+            "icon": None,
+            "clouds": 0,
+            "rain_1h": 0,
+            "snow_1h": 0,
+            "wind_speed": 0,
+            "visibility": 10000,
+            "weather_impact": 0,
+            "observed_at": None,
+        }
+        weather_status = "fallback"
 
     history = [
         x["current_speed"]
@@ -185,7 +199,7 @@ async def route_predict(origin: str, destination: str):
         "predicted_speed": predicted_speed,
         "congestion_level": level,
         "probability": probability,
-        "weather": weather,
+        "weather": weather,\n        "weather_status": weather_status,
         "forecast": forecast,
         "route_points": points,
         "updated_at": now.isoformat(),
