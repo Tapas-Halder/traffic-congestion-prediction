@@ -77,7 +77,7 @@ def extract_road_candidates(route):
             "lat": float(point["latitude"]),
             "lon": float(point["longitude"]),
         })
-    return roads[:8]
+    return roads[:5]
 
 async def road_traffic(roads):
     async def one(road):
@@ -189,7 +189,7 @@ async def route_predict(origin: str, destination: str):
 
     selected = routes[0]
     distance_m, travel_time, traffic_delay, no_traffic_time = route_summary(selected)
-    road_data = await road_traffic(extract_road_candidates(selected))
+    try:\n        road_data = await road_traffic(extract_road_candidates(selected))\n    except Exception:\n        road_data = []
 
     # Route-average speed is the ML input, so one unusually slow road does not
     # incorrectly represent the whole trip.
