@@ -22,11 +22,29 @@ async function get(url,timeoutMs=45000){
   }finally{clearTimeout(timer)}
 }
 
+function showLoader(message="Analyzing live traffic…"){
+  const loader=$("predictionLoader");
+  if(loader){
+    $("loaderText").textContent=message;
+    loader.classList.add("show");
+    loader.setAttribute("aria-hidden","false");
+  }
+}
+
+function hideLoader(){
+  const loader=$("predictionLoader");
+  if(loader){
+    loader.classList.remove("show");
+    loader.setAttribute("aria-hidden","true");
+  }
+}
+
 function setBusy(value){
   busy=value;
   $("predict").disabled=value||!locationsReady;
   $("refresh").disabled=value||!locationsReady;
-  $("predict").innerHTML=value?"Analyzing…":"Check traffic <span>→</span>";\n  if(value)showLoader("Connecting to TomTom, weather and ML model…"); else hideLoader();
+  $("predict").innerHTML=value?"Analyzing…":"Check traffic <span>→</span>";
+  if(value)showLoader("Connecting to TomTom, weather and ML model…"); else hideLoader();
 }
 
 function setLevel(level){
@@ -118,7 +136,8 @@ async function predict(){
   setBusy(true);
   $("status").textContent="Getting TomTom route, live road traffic and weather…";
   try{
-    showLoader("TomTom route received. Running ML congestion prediction…");\n    const data=await get("/api/route-predict?origin="+encodeURIComponent(origin)+"&destination="+encodeURIComponent(destination),70000);
+    showLoader("TomTom route received. Running ML congestion prediction…");
+    const data=await get("/api/route-predict?origin="+encodeURIComponent(origin)+"&destination="+encodeURIComponent(destination),70000);
     if(!data.route_points||data.route_points.length<2)throw new Error("No real road geometry was returned.");
     lastData=data;
     setLevel(data.congestion_level);
@@ -159,7 +178,11 @@ window.addEventListener("error",event=>{
   if(!busy)$("status").textContent="Page error: "+(event.message||"Please refresh the page.");
 });
 
-document.addEventListener("DOMContentLoaded",()=>{\n  if(!$("predict")||!$("origin")||!$("destination"))return;\n});\n\nloadLocations().catch(error=>{
+document.addEventListener("DOMContentLoaded",()=>{
+  if(!$("predict")||!$("origin")||!$("destination"))return;
+});
+
+loadLocations().catch(error=>{
   $("status").textContent="Could not load locations: "+error.message;
   $("predict").disabled=true;$("refresh").disabled=true;
 });
