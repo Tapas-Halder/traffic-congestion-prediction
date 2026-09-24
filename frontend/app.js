@@ -3,7 +3,7 @@ const $=id=>document.getElementById(id);
 const map=L.map("map").setView([22.57,88.36],11);
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{attribution:"© OpenStreetMap contributors"}).addTo(map);
 const routeLayer=L.layerGroup().addTo(map),markers=L.layerGroup().addTo(map);
-let lastData=null, busy=false, locationsReady=false;
+let lastData=null, busy=false, locationsReady=false, pageReady=false;
 const levelColors={"Free Flow":"#12b76a","Moderate":"#f79009","Heavy":"#f04438","Severe":"#b42318","Unknown":"#667085"};
 
 async function get(url,timeoutMs=45000){
@@ -26,7 +26,7 @@ function setBusy(value){
   busy=value;
   $("predict").disabled=value||!locationsReady;
   $("refresh").disabled=value||!locationsReady;
-  $("predict").innerHTML=value?"Checking live roads…":"Check traffic <span>→</span>";
+  $("predict").innerHTML=value?"Analyzing…":"Check traffic <span>→</span>";\n  if(value)showLoader("Connecting to TomTom, weather and ML model…"); else hideLoader();
 }
 
 function setLevel(level){
@@ -118,7 +118,7 @@ async function predict(){
   setBusy(true);
   $("status").textContent="Getting TomTom route, live road traffic and weather…";
   try{
-    const data=await get("/api/route-predict?origin="+encodeURIComponent(origin)+"&destination="+encodeURIComponent(destination),50000);
+    showLoader("TomTom route received. Running ML congestion prediction…");\n    const data=await get("/api/route-predict?origin="+encodeURIComponent(origin)+"&destination="+encodeURIComponent(destination),70000);
     if(!data.route_points||data.route_points.length<2)throw new Error("No real road geometry was returned.");
     lastData=data;
     setLevel(data.congestion_level);
@@ -149,8 +149,8 @@ async function predict(){
   }
 }
 
-$("predict").addEventListener("click",predict);
-$("refresh").addEventListener("click",predict);
+$("predict").addEventListener("click",()=>predict());
+$("refresh").addEventListener("click",()=>predict());
 $("origin").addEventListener("change",()=>{if($("origin").value===$("destination").value&&$("destination").options.length>1)$("destination").selectedIndex=$("origin").selectedIndex===0?1:0});
 $("destination").addEventListener("change",()=>{if($("origin").value===$("destination").value&&$("origin").options.length>1)$("origin").selectedIndex=$("destination").selectedIndex===0?1:0});
 
@@ -159,7 +159,7 @@ window.addEventListener("error",event=>{
   if(!busy)$("status").textContent="Page error: "+(event.message||"Please refresh the page.");
 });
 
-loadLocations().catch(error=>{
+document.addEventListener("DOMContentLoaded",()=>{\n  if(!$("predict")||!$("origin")||!$("destination"))return;\n});\n\nloadLocations().catch(error=>{
   $("status").textContent="Could not load locations: "+error.message;
   $("predict").disabled=true;$("refresh").disabled=true;
 });
