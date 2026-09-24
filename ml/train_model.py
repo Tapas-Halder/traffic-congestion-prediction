@@ -23,10 +23,10 @@ def make_historical_data():
     rows=[]
     # Synthetic historical sensor-like baseline used when a real sensor CSV is unavailable.
     # Each route has a repeatable daily pattern plus weather/event effects.
-    for route_id in range(12):
+    for route_id in range(8):
         base_free=rng.uniform(42,68)
         speeds=[]
-        for i in range(90*288):
+        for i in range(30*288):
             hour=(i//12)%24
             dow=(i//(12*24))%7
             minute=(i%12)*5
@@ -75,10 +75,10 @@ X_train,X_test,y_speed_train,y_speed_test=train_test_split(X,y_speed,test_size=.
 _,_,y_level_train,y_level_test=train_test_split(X,y_level,test_size=.2,random_state=42)
 
 regressor=RandomForestRegressor(
-    n_estimators=220,max_depth=16,min_samples_leaf=2,random_state=42,n_jobs=-1
+    n_estimators=140,max_depth=14,min_samples_leaf=2,random_state=42,n_jobs=-1
 )
 classifier=RandomForestClassifier(
-    n_estimators=220,max_depth=16,min_samples_leaf=2,random_state=42,
+    n_estimators=140,max_depth=14,min_samples_leaf=2,random_state=42,
     class_weight="balanced",n_jobs=-1
 )
 regressor.fit(X_train,y_speed_train)
