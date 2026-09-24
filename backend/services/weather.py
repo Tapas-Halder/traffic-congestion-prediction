@@ -1,10 +1,16 @@
+import time
 import httpx
 from config import OPENWEATHER_API_KEY
 
 URL="https://api.openweathermap.org/data/2.5/weather"
+_CACHE={}
 
 async def get_weather(lat,lon):
     if not OPENWEATHER_API_KEY: raise RuntimeError("OPENWEATHER_API_KEY is not configured")
+    cache_key=(round(float(lat),3),round(float(lon),3))
+    cached=_CACHE.get(cache_key)
+    if cached and time.time()-cached["cached_at"]<600:
+        return cached["data"]
     async with httpx.AsyncClient(timeout=10) as client:
         response=await client.get(URL,params={"lat":lat,"lon":lon,"appid":OPENWEATHER_API_KEY,
                                               "units":"metric","lang":"en"})
@@ -13,9 +19,11 @@ async def get_weather(lat,lon):
     rain_1h=data.get("rain",{}).get("1h",0); snow_1h=data.get("snow",{}).get("1h",0)
     wind=data.get("wind",{}); visibility=data.get("visibility",10000)
     impact=min(100,round(max(clouds,rain_1h*25,snow_1h*25)))
-    return {"temperature":main.get("temp"),"feels_like":main.get("feels_like"),
+    result={"temperature":main.get("temp"),"feels_like":main.get("feels_like"),
             "humidity":main.get("humidity"),"pressure":main.get("pressure"),
             "description":(data.get("weather") or [{}])[0].get("description"),
             "icon":(data.get("weather") or [{}])[0].get("icon"),"clouds":clouds,
             "rain_1h":rain_1h,"snow_1h":snow_1h,"wind_speed":wind.get("speed"),
             "visibility":visibility,"weather_impact":impact,"observed_at":data.get("dt")}
+    _CACHE[cache_key]={"cached_at":time.time(),"data":result}
+    return result
