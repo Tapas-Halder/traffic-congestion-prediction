@@ -1,56 +1,11 @@
-<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="description" content="Real-time Kolkata traffic congestion prediction">
-<title>TrafficPulse Kolkata — Route Prediction</title>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<link rel="stylesheet" href="style.css">
-</head>
-<body>
-<div class="app-shell">
-<header class="topbar">
-  <div class="brand"><div class="brand-mark">TP</div><div><h1>TrafficPulse Kolkata</h1><p>Real-time route congestion prediction</p></div></div>
-  <div class="top-actions"><span class="live-pill"><i></i> Kolkata live</span><button id="refresh" class="btn primary">↻ Refresh</button></div>
-</header>
-<main class="container">
-<section class="hero">
-  <div><p class="eyebrow">INTELLIGENT TRANSPORT • KOLKATA</p><h2>Know your route.<br><span>Predict the traffic.</span></h2><p class="hero-copy">Select where you are going from and to. The system combines TomTom live traffic, weather and a Random Forest model to estimate congestion for your route.</p></div>
-  <div class="route-chip">📍 <strong>Kolkata area</strong><small>Live traffic coverage</small></div>
-</section>
-<section class="route-search panel">
-  <div class="route-input"><label>FROM</label><select id="origin"></select></div>
-  <div class="swap">→</div>
-  <div class="route-input"><label>TO</label><select id="destination"></select></div>
-  <button id="predict" class="btn predict-btn">Predict route <span>→</span></button>
-</section>
-<section class="stats-grid">
-<article class="stat-card"><div class="stat-icon traffic">⌁</div><div><p>Congestion</p><strong id="level">—</strong><small id="levelHint">Select a route</small></div></article>
-<article class="stat-card"><div class="stat-icon speed">↗</div><div><p>Current speed</p><strong id="speed">—</strong><small>Estimated from live route</small></div></article>
-<article class="stat-card"><div class="stat-icon forecast">◷</div><div><p>Predicted speed</p><strong id="predicted">—</strong><small>ML estimate</small></div></article>
-<article class="stat-card"><div class="stat-icon confidence">✓</div><div><p>Confidence</p><strong id="confidence">—</strong><small>Model probability</small></div></article>
-</section>
-<section class="dashboard-grid">
-<article class="panel map-panel">
-<div class="panel-head"><div><h3>Live route map</h3><p>Your selected Kolkata route is shown here.</p></div><span class="map-status"><i></i> Live</span></div>
-<div id="map"></div>
-<div class="map-legend"><span><i class="free"></i>Free flow</span><span><i class="moderate"></i>Moderate</span><span><i class="heavy"></i>Heavy</span><span><i class="severe"></i>Severe</span></div>
-</article>
-<aside class="panel result-panel">
-<div class="panel-head"><div><h3>Route analysis</h3><p>Real-time traffic prediction</p></div></div>
-<div class="route-summary"><div><span>Distance</span><strong id="distance">—</strong></div><div><span>Travel time</span><strong id="travelTime">—</strong></div><div><span>Traffic delay</span><strong id="delay">—</strong></div></div>
-<div class="weather-box"><div class="weather-icon">☁</div><div><strong id="weatherText">Weather: waiting</strong><small>OpenWeather at destination</small></div></div>
-<div id="status" class="status">Choose two locations and click Predict route.</div>
-<div class="model-box"><span>MODEL</span><strong>Random Forest</strong><small>Live traffic + weather + time features</small></div>
-</aside>
-</section>
-<section class="info-grid">
-<article class="panel info-card"><span class="info-number">01</span><div><h3>Choose route</h3><p>No latitude or longitude needed. Select two Kolkata locations.</p></div></article>
-<article class="panel info-card"><span class="info-number">02</span><div><h3>Live traffic</h3><p>TomTom route traffic is used to estimate current travel speed and delay.</p></div></article>
-<article class="panel info-card"><span class="info-number">03</span><div><h3>Predict congestion</h3><p>The ML model returns congestion level, predicted speed and confidence.</p></div></article>
-</section>
-</main>
-<footer><span>TrafficPulse Kolkata</span><span>TomTom + OpenWeather + FastAPI + Random Forest</span></footer>
-</div>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><script src="app.js"></script>
-</body></html>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Kolkata real-time traffic congestion prediction dashboard"><title>TrafficPulse Kolkata — Traffic Prediction</title><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"><link rel="stylesheet" href="style.css"></head><body><div class="app-shell">
+<header class="topbar"><div class="brand"><div class="brand-mark">TP</div><div><h1>TrafficPulse Kolkata</h1><p>Real-time traffic congestion prediction</p></div></div><div class="top-actions"><span class="live-pill"><i></i> Kolkata live</span><button id="refresh" class="btn primary">↻ Refresh</button></div></header>
+<main class="container"><section class="hero"><div><p class="eyebrow">INTELLIGENT TRANSPORT • KOLKATA</p><h2>Live traffic.<br><span>Future congestion.</span></h2><p class="hero-copy">Select a Kolkata route. TomTom live traffic and OpenWeather data are transformed into time, lag, rolling, weather and congestion features for the Random Forest prediction model.</p></div><div class="route-chip">📍 <strong>Kolkata area</strong><small>Route-level live coverage</small></div></section>
+<section class="route-search panel"><div class="route-input"><label>FROM</label><select id="origin"></select></div><div class="swap">→</div><div class="route-input"><label>TO</label><select id="destination"></select></div><button id="predict" class="btn predict-btn">Predict route <span>→</span></button></section>
+<section class="stats-grid"><article class="stat-card"><div class="stat-icon traffic">⌁</div><div><p>Current congestion</p><strong id="level">—</strong><small id="levelHint">Select a route</small></div></article><article class="stat-card"><div class="stat-icon speed">↗</div><div><p>Live speed</p><strong id="speed">—</strong><small>TomTom route estimate</small></div></article><article class="stat-card"><div class="stat-icon forecast">◷</div><div><p>15 min forecast</p><strong id="predicted">—</strong><small id="predictedLevel">ML predicted speed</small></div></article><article class="stat-card"><div class="stat-icon confidence">✓</div><div><p>Prediction confidence</p><strong id="confidence">—</strong><small>Random Forest probability</small></div></article></section>
+<section class="dashboard-grid"><article class="panel map-panel"><div class="panel-head"><div><h3>Live route map</h3><p>Route color represents current predicted congestion.</p></div><span class="map-status"><i></i> Live</span></div><div id="map"></div><div class="map-legend"><span><i class="free"></i>Free flow</span><span><i class="moderate"></i>Moderate</span><span><i class="heavy"></i>Heavy</span><span><i class="severe"></i>Severe</span></div></article>
+<aside class="panel result-panel"><div class="panel-head"><div><h3>Live route analysis</h3><p>Current traffic + weather</p></div></div><div class="route-summary"><div><span>Distance</span><strong id="distance">—</strong></div><div><span>Travel time</span><strong id="travelTime">—</strong></div><div><span>Delay</span><strong id="delay">—</strong></div></div><div class="weather-box"><div class="weather-icon" id="weatherIcon">☁</div><div><strong id="weatherText">Weather: waiting</strong><small id="weatherDetails">OpenWeather live conditions</small></div></div><div class="weather-grid"><div><span>Feels like</span><strong id="feelsLike">—</strong></div><div><span>Humidity</span><strong id="humidity">—</strong></div><div><span>Rain 1h</span><strong id="rain">—</strong></div><div><span>Wind</span><strong id="wind">—</strong></div></div><div id="status" class="status">Choose two locations and click Predict route.</div></aside></section>
+<section class="panel timeline-panel"><div class="panel-head"><div><h3>Traffic timeline</h3><p>Previous observations and next 15–60 minute ML predictions.</p></div><span id="timelineNote" class="timeline-note">Waiting for route</span></div><div class="timeline-grid" id="timeline"></div><div class="timeline-foot"><span>← Previous live observations</span><span>Now</span><span>Future ML forecast →</span></div></section>
+<section class="lower-grid"><article class="panel"><div class="panel-head"><div><h3>Model performance</h3><p>Evaluation on the generated historical training baseline.</p></div></div><div class="metrics-grid"><div><span>Accuracy</span><strong id="metricAccuracy">—</strong></div><div><span>F1 weighted</span><strong id="metricF1">—</strong></div><div><span>MAE</span><strong id="metricMAE">—</strong></div><div><span>R²</span><strong id="metricR2">—</strong></div></div><div class="model-note">Features include hour/day, 5/15/30/60-minute lags, rolling statistics, weather, event flag, congestion index and speed ratio.</div></article>
+<article class="panel"><div class="panel-head"><div><h3>Alerts & interpretation</h3><p>Decision-support view from the project requirements.</p></div></div><div id="alertBox" class="alert-box">No alert yet. Run a route prediction.</div><div class="info-mini"><span>MODEL</span><strong>Random Forest</strong><small>15-minute trained horizon • recursive 30/45/60-minute forecast</small></div></article></section></main>
+<footer><span>TrafficPulse Kolkata</span><span>TomTom + OpenWeather + FastAPI + Random Forest</span></footer></div><script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><script src="app.js"></script></body></html>
