@@ -1,4 +1,4 @@
-const API_BASE=window.API_BASE||"https://YOUR-RENDER-SERVICE.onrender.com";
+const API_BASE=window.API_BASE||"";
 const $=id=>document.getElementById(id);
 
 const map=L.map("map").setView([22.5726,88.3639],12);
