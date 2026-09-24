@@ -48,8 +48,7 @@ def locations():
 def predict(p: PredictionRequest):
     hour = p.hour if p.hour is not None else datetime.now().hour
     level, probability, speed = predictor.predict_current(
-        p.speed, p.free_flow_speed, hour,
-        {"rain_1h": p.weather},
+        p.speed, p.free_flow_speed, hour, {"rain_1h": p.weather}
     )
     return {
         "congestion_level": level,
@@ -96,7 +95,6 @@ async def route_predict(origin: str, destination: str):
     end = KOLKATA_LOCATIONS[destination]
     now = datetime.now(timezone.utc)
 
-    # Live traffic speed is the critical prediction input.
     try:
         flow = (await get_traffic(*start)).get("flowSegmentData", {})
         live_speed = float(flow.get("currentSpeed") or 0)
@@ -107,8 +105,6 @@ async def route_predict(origin: str, destination: str):
     if live_speed <= 0 or live_free_flow <= 0:
         raise HTTPException(502, "TomTom returned no live speed. Please try again.")
 
-    # Route details are helpful for the map, but prediction must continue
-    # even if the routing endpoint has a temporary problem.
     try:
         route_data = await get_route(start, end)
         route = (route_data.get("routes") or [None])[0]
@@ -141,8 +137,6 @@ async def route_predict(origin: str, destination: str):
             {"lat": end[0], "lon": end[1]},
         ]
 
-    # Weather improves the model, but a temporary weather API failure should
-    # not stop the traffic prediction.
     try:
         weather = await get_weather(*end)
         weather_status = "live"
@@ -199,7 +193,8 @@ async def route_predict(origin: str, destination: str):
         "predicted_speed": predicted_speed,
         "congestion_level": level,
         "probability": probability,
-        "weather": weather,\n        "weather_status": weather_status,
+        "weather": weather,
+        "weather_status": weather_status,
         "forecast": forecast,
         "route_points": points,
         "updated_at": now.isoformat(),
@@ -210,5 +205,4 @@ async def route_predict(origin: str, destination: str):
 
 @router.get("/model-metrics")
 def model_metrics():
-    # Kept for API compatibility; the user-facing dashboard does not show model metrics.
     return predictor.model_metrics()
