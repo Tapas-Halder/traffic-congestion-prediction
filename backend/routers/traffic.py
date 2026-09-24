@@ -189,7 +189,10 @@ async def route_predict(origin: str, destination: str):
 
     selected = routes[0]
     distance_m, travel_time, traffic_delay, no_traffic_time = route_summary(selected)
-    try:\n        road_data = await road_traffic(extract_road_candidates(selected))\n    except Exception:\n        road_data = []
+    try:
+        road_data = await road_traffic(extract_road_candidates(selected))
+    except Exception:
+        road_data = []
 
     # Route-average speed is the ML input, so one unusually slow road does not
     # incorrectly represent the whole trip.
