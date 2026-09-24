@@ -56,35 +56,26 @@ def congestion_level(speed, free_flow):
     return "Severe"
 
 def extract_road_candidates(route):
-    guidance = route.get("guidance", {})
-    instructions = guidance.get("instructions", []) or []
-    roads = []
-    seen = set()
-
+    instructions = (route.get("guidance") or {}).get("instructions", []) or []
+    roads, seen = [], set()
     for instruction in instructions:
         street = instruction.get("street") or ""
         road_numbers = instruction.get("roadNumbers") or []
         name = street.strip() if isinstance(street, str) else ""
         if not name and road_numbers:
             name = " / ".join(str(x) for x in road_numbers)
-        if not name:
+        if not name or name.lower() in seen:
             continue
-
-        key = name.lower()
-        if key in seen:
-            continue
-        seen.add(key)
-
         point = instruction.get("point") or {}
-        if "latitude" in point and "longitude" in point:
-            roads.append({
-                "name": name,
-                "road_numbers": road_numbers,
-                "lat": float(point["latitude"]),
-                "lon": float(point["longitude"]),
-            })
-
-    # Keep the UI fast while still showing the main roads used by the route.
+        if "latitude" not in point or "longitude" not in point:
+            continue
+        seen.add(name.lower())
+        roads.append({
+            "name": name,
+            "road_numbers": road_numbers,
+            "lat": float(point["latitude"]),
+            "lon": float(point["longitude"]),
+        })
     return roads[:8]
 
 async def road_traffic(roads):
@@ -114,7 +105,6 @@ async def road_traffic(roads):
                 "confidence": None,
                 "road_closure": False,
             }
-
     results = await asyncio.gather(*(one(r) for r in roads))
     return [x for x in results if x["current_speed"] is not None]
 
@@ -132,19 +122,14 @@ def predict(p: PredictionRequest):
     level, probability, speed = predictor.predict_current(
         p.speed, p.free_flow_speed, hour, {"rain_1h": p.weather}
     )
-    return {
-        "congestion_level": level,
-        "probability": probability,
-        "predicted_speed": speed,
-    }
+    return {"congestion_level": level, "probability": probability, "predicted_speed": speed}
 
 @router.get("/live")
 async def live(lat: float = DEFAULT_LAT, lon: float = DEFAULT_LON):
     try:
         data = (await get_traffic(lat, lon)).get("flowSegmentData", {})
         return {
-            "latitude": lat,
-            "longitude": lon,
+            "latitude": lat, "longitude": lon,
             "current_speed": data.get("currentSpeed"),
             "free_flow_speed": data.get("freeFlowSpeed"),
             "confidence": data.get("confidence"),
@@ -180,16 +165,12 @@ async def route_predict(origin: str, destination: str):
     try:
         route_data = await get_route(start, end)
     except Exception as exc:
-        raise HTTPException(
-            502,
-            f"TomTom route service error: {exc}. The map will not draw a fake straight line."
-        )
+        raise HTTPException(502, f"TomTom route service error: {exc}")
 
     routes = route_data.get("routes") or []
     if not routes:
         raise HTTPException(502, "TomTom returned no drivable route.")
 
-    # TomTom returns routes in decreasing optimality for this request.
     route_cards = []
     for index, route in enumerate(routes):
         distance_m, travel_time, delay, no_traffic = route_summary(route)
@@ -204,21 +185,15 @@ async def route_predict(origin: str, destination: str):
             "route_points": route_points(route),
         })
 
-    # The first route is the fastest route returned by TomTom for routeType=fastest.
     selected = routes[0]
     distance_m, travel_time, traffic_delay, no_traffic_time = route_summary(selected)
 
-    road_candidates = extract_road_candidates(selected)
-    road_data = await road_traffic(road_candidates)
+    # Road table uses real named guidance points and live TomTom flow data.
+    road_data = await road_traffic(extract_road_candidates(selected))
 
-    # Prefer actual road-level traffic at the first named road. If unavailable,
-    # use the route summary's traffic-adjusted speed.
-    if road_data:
-        current_speed = road_data[0]["current_speed"]
-        free_flow_speed = road_data[0]["free_flow_speed"]
-    else:
-        current_speed = (distance_m / travel_time) * 3.6
-        free_flow_speed = (distance_m / no_traffic_time) * 3.6
+    # ML predicts the route's average traffic-adjusted speed, not one arbitrary road.
+    current_speed = (distance_m / travel_time) * 3.6
+    free_flow_speed = (distance_m / no_traffic_time) * 3.6
 
     try:
         weather = await get_weather(*end)
@@ -232,11 +207,8 @@ async def route_predict(origin: str, destination: str):
         }
         weather_status = "fallback"
 
-    history = [
-        x["current_speed"]
-        for x in get_snapshots(origin, destination)
-        if x.get("current_speed") is not None
-    ]
+    history = [x["current_speed"] for x in get_snapshots(origin, destination)
+               if x.get("current_speed") is not None]
 
     local_now = datetime.now()
     level, probability, predicted_speed = predictor.predict_current(
@@ -269,7 +241,6 @@ async def route_predict(origin: str, destination: str):
         "route_source": "TomTom Routing + Traffic",
         "updated_at": now.isoformat(),
     }
-
     add_snapshot(origin, destination, result)
     return result
 
