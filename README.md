@@ -1,30 +1,26 @@
 # Traffic Congestion Prediction System
 
-Simple final-year project based on the provided project guidelines.
+This implementation follows the supplied Traffic Congestion Prediction System document: live traffic -> historical/training data -> feature engineering -> ML model -> 15/30/45/60 minute congestion prediction -> traffic dashboard.
 
-## Parts
-1. Frontend: HTML, CSS, JavaScript + Leaflet map
-2. Backend: FastAPI
-3. ML: Random Forest
-4. External APIs: TomTom Traffic API + OpenWeather API
+## Current implementation
 
-## Database
-A database is **not required** for the basic project because the main requirement is live traffic data -> preprocessing/features -> ML prediction -> dashboard. Prediction results are returned directly by FastAPI and are not permanently stored.
+- **Traffic source:** TomTom Routing/Traffic API for live route travel time, traffic delay and route geometry.
+- **Weather source:** OpenWeather current conditions.
+- **Feature engineering:** hour, day of week, weekend flag, 5/15/30/60 minute lag values, rolling mean/std, temperature, rainfall, visibility, event flag, congestion index and speed ratio.
+- **ML:** Random Forest regressor for future speed + Random Forest classifier for Free Flow / Moderate / Heavy / Severe congestion.
+- **Forecast horizons:** 15, 30, 45 and 60 minutes. The model is trained for the 15-minute horizon and recursively produces the longer horizons.
+- **Confidence:** classifier probability.
+- **Dashboard:** Kolkata route selector, live map, current congestion, live weather, previous observations, future timeline, alerts and model metrics.
+- **Recent history:** browser localStorage keeps route observations, while FastAPI keeps recent observations during the running service. No fake previous live data is shown.
 
-## Flow
-TomTom Traffic API + Weather API
-        ↓
-FastAPI
-        ↓
-Feature preparation
-        ↓
-Random Forest ML
-        ↓
-Congestion Level + Predicted Speed
-        ↓
-HTML/CSS/JS Dashboard
+## Important data note
+
+The training script creates a **synthetic sensor-style historical baseline** because no real Kolkata traffic-sensor history is included in the supplied project document/repository. This is suitable for demonstrating the complete ML pipeline, but real historical traffic CSV/sensor data should replace it before claiming production-level accuracy.
+
+The model uses the historical feature structure required by the document. Real sensor data can later provide vehicle volume, occupancy, queue length, incidents, roadworks, holidays and other contextual fields.
 
 ## Local setup
+
 Create `backend/.env` from `.env.example`:
 
 ```text
@@ -33,28 +29,44 @@ OPENWEATHER_API_KEY=your_key
 FRONTEND_URL=*
 ```
 
-Install and run:
+Install and train:
 
 ```bash
-cd backend
-pip install -r requirements.txt
-cd ..
+pip install -r backend/requirements.txt
 python ml/train_model.py
 cd backend
 uvicorn main:app --reload
 ```
 
-Open `http://127.0.0.1:8000/` for the full website and `http://127.0.0.1:8000/docs` for the API documentation.
+Open `http://127.0.0.1:8000/`.
 
-## Single Render deployment
-The full website is deployed as **one Render Web Service**. FastAPI serves the frontend files, so Vercel is not required.
+## Render
 
-Use `render.yaml` and set these Render environment variables:
+The repository is configured as one Render Web Service. Build command:
+
+```text
+pip install -r backend/requirements.txt && python ml/train_model.py
+```
+
+Start command:
+
+```text
+cd backend && uvicorn main:app --host 0.0.0.0 --port $PORT
+```
+
+Required Render environment variables:
 - `TOMTOM_API_KEY`
 - `OPENWEATHER_API_KEY`
+- `PYTHON_VERSION=3.11.11`
 
-`FRONTEND_URL` is already configured as `*` in `render.yaml` for the simple single-service setup.
+Never commit API keys.
 
-After deployment, the Render URL opens the dashboard directly. No frontend URL needs to be added to `frontend/app.js` because it uses the same-origin API.
+## API endpoints
 
-Never commit `.env` or API keys.
+- `GET /api/health`
+- `GET /api/locations`
+- `GET /api/route-predict?origin=...&destination=...`
+- `GET /api/route-history?origin=...&destination=...`
+- `GET /api/weather?lat=...&lon=...`
+- `GET /api/model-metrics`
+- `GET /docs`
