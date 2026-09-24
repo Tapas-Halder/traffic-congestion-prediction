@@ -33,3 +33,12 @@ def create_traffic(
     db.refresh(traffic)
 
     return traffic
+
+@router.get("/")
+def get_traffic_data(
+    db: Session = Depends(get_db)
+):
+
+    data = db.query(TrafficData).all()
+
+    return data
