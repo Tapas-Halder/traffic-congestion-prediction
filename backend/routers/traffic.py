@@ -199,6 +199,21 @@ async def route_predict(origin: str, destination: str):
     current_speed = (distance_m / travel_time) * 3.6
     free_flow_speed = (distance_m / no_traffic_time) * 3.6
 
+    # If routing had to fall back to the public road router, still use
+    # TomTom live flow at the origin when the traffic key/service is available.
+    route_source = "TomTom Routing + Traffic"
+    if route_data.get("_fallback"):
+        route_source = "Road routing fallback + TomTom live traffic"
+        try:
+            flow = (await get_traffic(*start)).get("flowSegmentData", {})
+            live_speed = float(flow.get("currentSpeed") or 0)
+            live_free = float(flow.get("freeFlowSpeed") or 0)
+            if live_speed > 0 and live_free > 0:
+                current_speed = live_speed
+                free_flow_speed = live_free
+        except Exception:
+            pass
+
     try:
         weather = await get_weather(*end)
         weather_status = "live"
@@ -242,7 +257,7 @@ async def route_predict(origin: str, destination: str):
         "roads": road_data,
         "routes": route_cards,
         "selected_route_index": 0,
-        "route_source": "TomTom Routing + Traffic",
+        "route_source": route_source,
         "updated_at": now.isoformat(),
     }
     add_snapshot(origin, destination, result)
