@@ -1,5 +1,6 @@
 import asyncio
 from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 from fastapi import APIRouter, HTTPException
 from schemas.traffic import PredictionRequest, PredictionResponse
 from services.predictor import predictor
@@ -118,7 +119,8 @@ def locations():
 
 @router.post("/predict", response_model=PredictionResponse)
 def predict(p: PredictionRequest):
-    hour = p.hour if p.hour is not None else datetime.now().hour
+    local_now = datetime.now(ZoneInfo("Asia/Kolkata"))
+    hour = p.hour if p.hour is not None else local_now.hour
     level, probability, speed = predictor.predict_current(
         p.speed, p.free_flow_speed, hour, {"rain_1h": p.weather}
     )
@@ -187,11 +189,10 @@ async def route_predict(origin: str, destination: str):
 
     selected = routes[0]
     distance_m, travel_time, traffic_delay, no_traffic_time = route_summary(selected)
-
-    # Road table uses real named guidance points and live TomTom flow data.
     road_data = await road_traffic(extract_road_candidates(selected))
 
-    # ML predicts the route's average traffic-adjusted speed, not one arbitrary road.
+    # Route-average speed is the ML input, so one unusually slow road does not
+    # incorrectly represent the whole trip.
     current_speed = (distance_m / travel_time) * 3.6
     free_flow_speed = (distance_m / no_traffic_time) * 3.6
 
@@ -210,7 +211,7 @@ async def route_predict(origin: str, destination: str):
     history = [x["current_speed"] for x in get_snapshots(origin, destination)
                if x.get("current_speed") is not None]
 
-    local_now = datetime.now()
+    local_now = datetime.now(ZoneInfo("Asia/Kolkata"))
     level, probability, predicted_speed = predictor.predict_current(
         current_speed, max(free_flow_speed, current_speed), local_now.hour,
         weather, history, local_now.weekday()
