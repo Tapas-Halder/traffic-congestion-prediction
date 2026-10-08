@@ -40,3 +40,29 @@ Then open http://127.0.0.1:8000/docs.
 
 ## Phase 4 data flow
 TomTom API + OpenWeather API -> Python services -> collector -> FastAPI -> frontend/ML
+
+
+## Phase 5 - Backend prediction API
+
+The backend now exposes:
+- GET /health - backend and API-key configuration status.
+- GET /api/v1/data/current - live TomTom + OpenWeather payload.
+- POST /api/v1/predict - collects live data, builds ML features, and runs MODEL_PATH.
+
+### ML model contract
+
+The trained model is loaded with joblib and receives these features in this exact order:
+current_speed, free_flow_speed, speed_ratio, traffic_confidence, temperature, humidity, rain_1h, hour, day_of_week.
+
+Set MODEL_PATH to the ML team's .joblib model file after training. Until the model exists, /api/v1/predict returns HTTP 503 rather than inventing a prediction.
+
+### Local test
+
+    cd backend
+    python -m venv .venv
+    # Windows: .venv\Scripts\activate
+    # Linux/macOS: source .venv/bin/activate
+    pip install -r requirements.txt
+    uvicorn app.main:app --reload
+
+Open http://127.0.0.1:8000/docs and test the endpoints from Swagger UI.
