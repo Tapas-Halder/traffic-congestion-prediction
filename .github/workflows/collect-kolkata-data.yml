@@ -2,10 +2,8 @@ name: Collect Kolkata traffic and weather data
 
 on:
   workflow_dispatch:
-  schedule:
-    # TEMPORARY SCHEDULER TEST: every 5 minutes.
-    # We will return this to every 15 minutes after the scheduler is confirmed.
-    - cron: "*/5 * * * *"
+  repository_dispatch:
+    types: [collect-kolkata-data]
 
 permissions:
   contents: write
