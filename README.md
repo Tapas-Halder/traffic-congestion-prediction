@@ -43,27 +43,29 @@ traffic-congestion-prediction/
 
 ## Data collection
 
-GitHub Actions collects one Kolkata traffic + weather row on a scheduled basis.
+GitHub Actions automatically collects one Kolkata traffic + weather row every 15 minutes.
 
-Schedule: approximately every 15 minutes.
+Schedule:
+- every 15 minutes: `*/15 * * * *`
 
-The schedule is:
-- minute 07
-- minute 22
-- minute 37
-- minute 52
+The workflow runs on the `main` branch and uses the GitHub Actions secrets:
+- `TOMTOM_API_KEY`
+- `OPENWEATHER_API_KEY`
 
-The offset avoids putting the job exactly at the start of the hour, when GitHub Actions can be busy.
-
-Important: GitHub scheduled workflows are best-effort. They can start a few minutes late because GitHub controls runner scheduling. They are not a hard real-time 15-minute timer.
-
-Use **Actions -> Collect Kolkata traffic and weather data -> Run workflow** for an immediate/manual collection.
-
-The collected data is appended to:
+Collected data is appended to:
 
 `data/raw/kolkata_traffic_weather.csv`
 
-## API secrets
+### Important about the 15-minute schedule
+
+GitHub Actions scheduled workflows are automatic but **not a hard real-time timer**. GitHub may delay a scheduled run by a few minutes during high load. The schedule therefore means "run about every 15 minutes", not an exact clock guarantee.
+
+For testing, use:
+**Actions -> Collect Kolkata traffic and weather data -> Run workflow**
+
+The workflow has a manual trigger as well as the automatic schedule.
+
+
 
 Never commit API keys.
 
