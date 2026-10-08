@@ -66,8 +66,7 @@ Current monitored checkpoints:
 - Garia / EM Bypass
 - Park Street
 
-The schedule is approximately every 15 minutes:
-`7,22,37,52 * * * *` UTC.
+The schedule runs every 15 minutes using the Asia/Kolkata timezone.
 
 ### Important: scheduled workflow troubleshooting
 
