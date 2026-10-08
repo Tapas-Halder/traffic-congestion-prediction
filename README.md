@@ -43,13 +43,16 @@ traffic-congestion-prediction/
 
 ## Data collection
 
-GitHub Actions automatically collects **multiple Kolkata road traffic rows** about every 15 minutes.
+GitHub Actions is configured to collect all monitored Kolkata road checkpoints automatically.
 
-Each run monitors 12 representative checkpoints across major corridors, including the Howrah-Sector V corridor, North Kolkata, Airport corridor, EM Bypass and Central Kolkata.
+Each scheduled run:
+1. calls OpenWeather once for Kolkata weather;
+2. calls TomTom separately for each monitored road checkpoint;
+3. appends the checkpoint rows to `data/raw/kolkata_traffic_weather.csv`;
+4. writes a successful-run heartbeat to `data/status/last_successful_collection_utc.txt`;
+5. commits both files to `main`.
 
-A single TomTom `flowSegmentData` request does **not** represent all of Kolkata. The collector therefore sends separate traffic requests for separate road checkpoints. Weather is fetched once for Kolkata and attached to each checkpoint row.
-
-Current monitored checkpoints include:
+Current monitored checkpoints:
 - Howrah Bridge
 - Esplanade
 - Park Circus
@@ -63,22 +66,24 @@ Current monitored checkpoints include:
 - Garia / EM Bypass
 - Park Street
 
-The Howrah-Sector V corridor is represented by multiple checkpoints, not one latitude/longitude. This lets the ML model learn location-specific congestion patterns.
+The schedule is approximately every 15 minutes:
+`7,22,37,52 * * * *` UTC.
 
-Schedule:
-- approximately every 15 minutes: `7,22,37,52 * * * *` (UTC)
+### Important: scheduled workflow troubleshooting
 
-The workflow runs on the `main` branch and uses the GitHub Actions secrets:
-- `TOMTOM_API_KEY`
-- `OPENWEATHER_API_KEY`
+GitHub scheduled workflows are not guaranteed to start at an exact minute. They can be delayed, especially during high-load periods.
 
-Collected data is appended to:
+Also check that GitHub Actions is enabled for this repository and that this workflow is present on the repository's default branch.
 
-`data/raw/kolkata_traffic_weather.csv`
+To test immediately:
+**Actions -> Collect Kolkata traffic and weather data -> Run workflow**
 
-### Important about the 15-minute schedule
+After a successful run, verify:
+- `data/raw/kolkata_traffic_weather.csv` has new rows;
+- `data/status/last_successful_collection_utc.txt` has a new timestamp;
+- the workflow run shows green/success.
 
-GitHub Actions scheduled workflows are automatic but **not a hard real-time timer**. GitHub may delay a scheduled run by a few minutes during high load. The schedule therefore means "run about every 15 minutes", not an exact clock guarantee.
+If the manual run succeeds but scheduled runs never appear, the problem is the GitHub Actions scheduling/settings rather than the Python collector.
 
 For testing, use:
 **Actions -> Collect Kolkata traffic and weather data -> Run workflow**
