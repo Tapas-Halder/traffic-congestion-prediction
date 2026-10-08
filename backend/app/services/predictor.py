@@ -1,7 +1,9 @@
 import os
+from pathlib import Path
 from typing import Any
 
-MODEL_PATH = os.getenv("MODEL_PATH", "../ml/model.joblib")
+DEFAULT_MODEL_PATH = Path(__file__).resolve().parents[3] / "ml" / "model.joblib"
+MODEL_PATH = Path(os.getenv("MODEL_PATH", str(DEFAULT_MODEL_PATH)))
 
 
 def predict(features: dict[str, float]) -> dict[str, Any]:
@@ -10,8 +12,11 @@ def predict(features: dict[str, float]) -> dict[str, Any]:
     The ML team should provide a joblib model whose predict() accepts the feature
     order documented in backend/README.md.
     """
-    if not os.path.exists(MODEL_PATH):
-        raise RuntimeError("ML model is not available yet. Set MODEL_PATH after the ML team supplies model.joblib")
+    if not MODEL_PATH.exists():
+        raise RuntimeError(
+            "ML model is not available yet. Set MODEL_PATH after the ML team "
+            "supplies model.joblib"
+        )
 
     try:
         import joblib
