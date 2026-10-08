@@ -3,8 +3,9 @@ name: Collect Kolkata traffic and weather data
 on:
   workflow_dispatch:
   schedule:
-    # Run automatically every 15 minutes.
-    - cron: "*/15 * * * *"
+    # Avoid the top of the hour to reduce GitHub Actions schedule delays.
+    # Times are UTC: 07, 22, 37, 52 minutes of every hour.
+    - cron: "7,22,37,52 * * * *"
 
 permissions:
   contents: write
@@ -16,11 +17,13 @@ concurrency:
 jobs:
   collect:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -29,6 +32,15 @@ jobs:
 
       - name: Install dependencies
         run: pip install requests
+
+      - name: Check API secrets
+        env:
+          TOMTOM_API_KEY: ${{ secrets.TOMTOM_API_KEY }}
+          OPENWEATHER_API_KEY: ${{ secrets.OPENWEATHER_API_KEY }}
+        run: |
+          test -n "$TOMTOM_API_KEY" || (echo "TOMTOM_API_KEY is missing" && exit 1)
+          test -n "$OPENWEATHER_API_KEY" || (echo "OPENWEATHER_API_KEY is missing" && exit 1)
+          echo "Both API secrets are configured."
 
       - name: Collect one row
         env:
