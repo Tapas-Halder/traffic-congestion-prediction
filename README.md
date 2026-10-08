@@ -43,10 +43,30 @@ traffic-congestion-prediction/
 
 ## Data collection
 
-GitHub Actions automatically collects one Kolkata traffic + weather row every 15 minutes.
+GitHub Actions automatically collects **multiple Kolkata road traffic rows** about every 15 minutes.
+
+Each run monitors 12 representative checkpoints across major corridors, including the Howrah-Sector V corridor, North Kolkata, Airport corridor, EM Bypass and Central Kolkata.
+
+A single TomTom `flowSegmentData` request does **not** represent all of Kolkata. The collector therefore sends separate traffic requests for separate road checkpoints. Weather is fetched once for Kolkata and attached to each checkpoint row.
+
+Current monitored checkpoints include:
+- Howrah Bridge
+- Esplanade
+- Park Circus
+- Science City
+- Chingrighata
+- Sector V
+- Shyambazar
+- Ultadanga
+- Airport / Jessore Road
+- Ruby / EM Bypass
+- Garia / EM Bypass
+- Park Street
+
+The Howrah-Sector V corridor is represented by multiple checkpoints, not one latitude/longitude. This lets the ML model learn location-specific congestion patterns.
 
 Schedule:
-- every 15 minutes: `*/15 * * * *`
+- approximately every 15 minutes: `7,22,37,52 * * * *` (UTC)
 
 The workflow runs on the `main` branch and uses the GitHub Actions secrets:
 - `TOMTOM_API_KEY`
