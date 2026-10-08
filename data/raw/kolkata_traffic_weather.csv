@@ -143,3 +143,15 @@ timestamp_utc,city,location_id,road_name,corridor,latitude,longitude,current_spe
 2026-10-08T19:31:02.060175+00:00,Kolkata,EAST-01,Ruby / EM Bypass,EM Bypass,22.51478,88.40147,31,31,1992,1992,1,False,23.96,25.02,100,1012,0,0.0,Clear,clear sky
 2026-10-08T19:31:02.060175+00:00,Kolkata,SOUTH-01,Garia / EM Bypass,EM Bypass,22.4629,88.3968,41,41,1040,1040,1,False,23.96,25.02,100,1012,0,0.0,Clear,clear sky
 2026-10-08T19:31:02.060175+00:00,Kolkata,CENTRAL-01,Park Street,Central Kolkata,22.5535,88.352,27,27,207,207,1,False,23.96,25.02,100,1012,0,0.0,Clear,clear sky
+2026-10-08T19:45:47.976213+00:00,Kolkata,H2S-01,Howrah Bridge,Howrah-Sector V,22.58563,88.34475,22,22,285,285,1,False,23.96,25.02,100,1011,2.06,0.0,Clear,clear sky
+2026-10-08T19:45:47.976213+00:00,Kolkata,H2S-02,Esplanade,Howrah-Sector V,22.5625,88.34983,24,24,422,422,1,False,23.96,25.02,100,1011,2.06,0.0,Clear,clear sky
+2026-10-08T19:45:47.976213+00:00,Kolkata,H2S-03,Park Circus,Howrah-Sector V,22.5392,88.37,29,29,384,384,1,False,23.96,25.02,100,1011,2.06,0.0,Clear,clear sky
+2026-10-08T19:45:47.976213+00:00,Kolkata,H2S-04,Science City,Howrah-Sector V,22.54004,88.39601,42,42,1630,1630,1,False,23.96,25.02,100,1011,2.06,0.0,Clear,clear sky
+2026-10-08T19:45:47.976213+00:00,Kolkata,H2S-05,Chingrighata,Howrah-Sector V,22.5507,88.40409,35,35,259,259,1,False,23.96,25.02,100,1011,2.06,0.0,Clear,clear sky
+2026-10-08T19:45:47.976213+00:00,Kolkata,H2S-06,Sector V,Howrah-Sector V,22.58132,88.42982,38,38,1527,1527,1,False,23.96,25.02,100,1011,2.06,0.0,Clear,clear sky
+2026-10-08T19:45:47.976213+00:00,Kolkata,NORTH-01,Shyambazar,North Kolkata,22.601,88.374,21,21,1307,1307,1,False,23.96,25.02,100,1011,2.06,0.0,Clear,clear sky
+2026-10-08T19:45:47.976213+00:00,Kolkata,NORTH-02,Ultadanga,North Kolkata,22.59613,88.38528,19,19,378,378,1,False,23.96,25.02,100,1011,2.06,0.0,Clear,clear sky
+2026-10-08T19:45:47.976213+00:00,Kolkata,AIR-01,Airport / Jessore Road,Airport Corridor,22.63951,88.42978,25,25,1429,1429,1,False,23.96,25.02,100,1011,2.06,0.0,Clear,clear sky
+2026-10-08T19:45:47.976213+00:00,Kolkata,EAST-01,Ruby / EM Bypass,EM Bypass,22.51478,88.40147,31,31,1992,1992,1,False,23.96,25.02,100,1011,2.06,0.0,Clear,clear sky
+2026-10-08T19:45:47.976213+00:00,Kolkata,SOUTH-01,Garia / EM Bypass,EM Bypass,22.4629,88.3968,41,41,1040,1040,1,False,23.96,25.02,100,1011,2.06,0.0,Clear,clear sky
+2026-10-08T19:45:47.976213+00:00,Kolkata,CENTRAL-01,Park Street,Central Kolkata,22.5535,88.352,27,27,207,207,1,False,23.96,25.02,100,1011,2.06,0.0,Clear,clear sky
