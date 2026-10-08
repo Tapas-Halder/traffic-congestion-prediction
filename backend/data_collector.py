@@ -9,6 +9,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
 KOLKATA_LAT = 22.5726
 KOLKATA_LON = 88.3639
@@ -32,13 +34,29 @@ def get_env(name: str) -> str:
     return value
 
 
+def create_session() -> requests.Session:
+    session = requests.Session()
+    retry = Retry(
+        total=3,
+        connect=3,
+        read=3,
+        backoff_factor=2,
+        status_forcelist=[429, 500, 502, 503, 504],
+        allowed_methods=["GET"],
+        raise_on_status=False,
+    )
+    adapter = HTTPAdapter(max_retries=retry)
+    session.mount("https://", adapter)
+    return session
+
+
 def fetch_traffic(api_key: str) -> dict:
     params = {
         "point": f"{KOLKATA_LAT},{KOLKATA_LON}",
         "unit": "KMPH",
         "key": api_key,
     }
-    response = requests.get(TRAFFIC_URL, params=params, timeout=30)
+    response = create_session().get(TRAFFIC_URL, params=params, timeout=30)
     response.raise_for_status()
     return response.json()["flowSegmentData"]
 
@@ -50,7 +68,7 @@ def fetch_weather(api_key: str) -> dict:
         "appid": api_key,
         "units": "metric",
     }
-    response = requests.get(WEATHER_URL, params=params, timeout=30)
+    response = create_session().get(WEATHER_URL, params=params, timeout=30)
     response.raise_for_status()
     return response.json()
 
