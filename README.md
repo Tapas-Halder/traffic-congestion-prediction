@@ -43,53 +43,33 @@ traffic-congestion-prediction/
 
 ## Data collection
 
-GitHub Actions is configured to collect all monitored Kolkata road checkpoints automatically.
+Automatic collection is triggered by an external scheduler (cron-job.org) through GitHub's `repository_dispatch` event.
 
-Each scheduled run:
+Each collection run:
 1. calls OpenWeather once for Kolkata weather;
 2. calls TomTom separately for each monitored road checkpoint;
 3. appends the checkpoint rows to `data/raw/kolkata_traffic_weather.csv`;
-4. writes a successful-run heartbeat to `data/status/last_successful_collection_utc.txt`;
-5. commits both files to `main`.
+4. commits the updated CSV to `main`.
 
-Current monitored checkpoints:
-- Howrah Bridge
-- Esplanade
-- Park Circus
-- Science City
-- Chingrighata
-- Sector V
-- Shyambazar
-- Ultadanga
-- Airport / Jessore Road
-- Ruby / EM Bypass
-- Garia / EM Bypass
-- Park Street
+The external scheduler is configured separately from this repository. For testing, it can run every 5 minutes; after successful testing, use every 15 minutes.
 
-The schedule runs every 15 minutes using the Asia/Kolkata timezone.
+### Automatic collection
 
-### Important: scheduled workflow troubleshooting
+The GitHub workflow supports:
+- manual `workflow_dispatch` for testing;
+- external `repository_dispatch` from the scheduler.
 
-GitHub scheduled workflows are not guaranteed to start at an exact minute. They can be delayed, especially during high-load periods.
+The external scheduler sends:
+- POST to GitHub's repository dispatch endpoint;
+- event type: `collect-kolkata-data`;
+- a GitHub token with repository Contents write permission.
 
-Also check that GitHub Actions is enabled for this repository and that this workflow is present on the repository's default branch.
+Keep the TomTom and OpenWeather keys only in GitHub Actions Secrets. Do not put either API key in the external scheduler.
 
-To test immediately:
+For a manual test:
 **Actions -> Collect Kolkata traffic and weather data -> Run workflow**
 
-After a successful run, verify:
-- `data/raw/kolkata_traffic_weather.csv` has new rows;
-- `data/status/last_successful_collection_utc.txt` has a new timestamp;
-- the workflow run shows green/success.
-
-If the manual run succeeds but scheduled runs never appear, the problem is the GitHub Actions scheduling/settings rather than the Python collector.
-
-For testing, use:
-**Actions -> Collect Kolkata traffic and weather data -> Run workflow**
-
-The workflow has a manual trigger as well as the automatic schedule.
-
-
+A successful collection adds new rows to `data/raw/kolkata_traffic_weather.csv`.
 
 Never commit API keys.
 
@@ -156,7 +136,7 @@ Branch -> Commit -> Push -> Pull Request -> Team Leader review -> Merge
 ## Development status
 
 - Backend/API: Done
-- Data collection automation: Configured; scheduled collection is best-effort
+- Data collection automation: External scheduler + GitHub repository dispatch configured
 - ML: Random Forest in progress
 - Frontend: Streamlit in progress
 - Integration: Pending
