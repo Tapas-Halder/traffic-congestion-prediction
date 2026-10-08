@@ -39,8 +39,29 @@ Then open http://127.0.0.1:8000/docs.
 - GET /api/v1/data/current?latitude=22.5726&longitude=88.3639
 
 ## Phase 4 data flow
-TomTom API + OpenWeather API -> Python services -> collector -> FastAPI -> frontend/ML
 
+TomTom + OpenWeather
+-> multiple Kolkata road checkpoints
+-> CSV append
+-> GitHub Actions commit
+
+TomTom is queried separately for each monitored checkpoint. A single latitude/longitude does not represent the whole city.
+
+### Automatic collection
+
+GitHub Actions runs the collector approximately every 15 minutes using:
+`7,22,37,52 * * * *` UTC.
+
+Each successful run:
+- fetches Kolkata weather once;
+- fetches traffic for every configured checkpoint;
+- appends multiple rows to `data/raw/kolkata_traffic_weather.csv`;
+- updates `data/status/last_successful_collection_utc.txt`;
+- commits the changes to `main`.
+
+Current checkpoints include Howrah Bridge, Esplanade, Park Circus, Science City, Chingrighata, Sector V, Shyambazar, Ultadanga, Airport/Jessore Road, Ruby/EM Bypass, Garia/EM Bypass and Park Street.
+
+If scheduled runs do not appear in GitHub Actions, first run the workflow manually. If manual execution succeeds but scheduled executions never appear, check that Actions is enabled and that the workflow exists on the repository default branch.
 
 ## Phase 5 - Backend prediction API
 
