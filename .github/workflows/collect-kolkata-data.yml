@@ -46,12 +46,8 @@ jobs:
           OPENWEATHER_API_KEY: ${{ secrets.OPENWEATHER_API_KEY }}
         run: python backend/data_collector.py
 
-      - name: Record successful collection heartbeat
-        run: |
-          mkdir -p data/status
-          date -u +"%Y-%m-%dT%H:%M:%SZ" > data/status/last_successful_collection_utc.txt
+      - name: Commit new data
 
-      - name: Commit new data and heartbeat
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
