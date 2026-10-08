@@ -3,9 +3,9 @@ name: Collect Kolkata traffic and weather data
 on:
   workflow_dispatch:
   schedule:
-    # Every 15 minutes in Kolkata time.
-    - cron: "*/15 * * * *"
-      timezone: "Asia/Kolkata"
+    # Every 15 minutes, deliberately offset from :00 to avoid GitHub peak-minute load.
+    # This is every 15 minutes in UTC and therefore also every 15 minutes in Kolkata.
+    - cron: "7,22,37,52 * * * *"
 
 permissions:
   contents: write
