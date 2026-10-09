@@ -1079,3 +1079,15 @@ timestamp_utc,city,location_id,road_name,corridor,latitude,longitude,current_spe
 2026-10-09T15:01:23.524742+00:00,Kolkata,EAST-01,Ruby / EM Bypass,EM Bypass,22.51478,88.40147,25,32,2470,1929,0.975734,False,27.96,31.7,78,1012,2.06,0.0,Clouds,broken clouds
 2026-10-09T15:01:23.524742+00:00,Kolkata,SOUTH-01,Garia / EM Bypass,EM Bypass,22.4629,88.3968,35,41,1218,1040,0.995061,False,27.96,31.7,78,1012,2.06,0.0,Clouds,broken clouds
 2026-10-09T15:01:23.524742+00:00,Kolkata,CENTRAL-01,Park Street,Central Kolkata,22.5535,88.352,22,26,255,215,1,False,27.96,31.7,78,1012,2.06,0.0,Clouds,broken clouds
+2026-10-09T15:15:51.420187+00:00,Kolkata,H2S-01,Howrah Bridge,Howrah-Sector V,22.58563,88.34475,13,23,483,273,0.99087,False,26.96,29.93,83,1012,1.54,0.0,Clouds,broken clouds
+2026-10-09T15:15:51.420187+00:00,Kolkata,H2S-02,Esplanade,Howrah-Sector V,22.5625,88.34983,15,24,675,422,0.997418,False,26.96,29.93,83,1012,1.54,0.0,Clouds,broken clouds
+2026-10-09T15:15:51.420187+00:00,Kolkata,H2S-03,Park Circus,Howrah-Sector V,22.5392,88.37,25,32,445,348,1,False,26.96,29.93,83,1012,1.54,0.0,Clouds,broken clouds
+2026-10-09T15:15:51.420187+00:00,Kolkata,H2S-04,Science City,Howrah-Sector V,22.54004,88.39601,37,43,1851,1592,0.774767,False,26.96,29.93,83,1012,1.54,0.0,Clouds,broken clouds
+2026-10-09T15:15:51.420187+00:00,Kolkata,H2S-05,Chingrighata,Howrah-Sector V,22.5507,88.40409,25,35,362,259,1,False,26.96,29.93,83,1012,1.54,0.0,Clouds,broken clouds
+2026-10-09T15:15:51.420187+00:00,Kolkata,H2S-06,Sector V,Howrah-Sector V,22.58132,88.42982,33,39,1758,1487,0.999568,False,26.96,29.93,83,1012,1.54,0.0,Clouds,broken clouds
+2026-10-09T15:15:51.420187+00:00,Kolkata,NORTH-01,Shyambazar,North Kolkata,22.601,88.374,17,21,1615,1307,1,False,26.96,29.93,83,1012,1.54,0.0,Clouds,broken clouds
+2026-10-09T15:15:51.420187+00:00,Kolkata,NORTH-02,Ultadanga,North Kolkata,22.59613,88.38528,17,19,422,378,0.984172,False,26.96,29.93,83,1012,1.54,0.0,Clouds,broken clouds
+2026-10-09T15:15:51.420187+00:00,Kolkata,AIR-01,Airport / Jessore Road,Airport Corridor,22.63951,88.42978,15,24,2382,1488,0.984839,True,26.96,29.93,83,1012,1.54,0.0,Clouds,broken clouds
+2026-10-09T15:15:51.420187+00:00,Kolkata,EAST-01,Ruby / EM Bypass,EM Bypass,22.51478,88.40147,26,32,2375,1929,0.975597,False,26.96,29.93,83,1012,1.54,0.0,Clouds,broken clouds
+2026-10-09T15:15:51.420187+00:00,Kolkata,SOUTH-01,Garia / EM Bypass,EM Bypass,22.4629,88.3968,41,41,1040,1040,1,False,26.96,29.93,83,1012,1.54,0.0,Clouds,broken clouds
+2026-10-09T15:15:51.420187+00:00,Kolkata,CENTRAL-01,Park Street,Central Kolkata,22.5535,88.352,20,26,280,215,1,False,26.96,29.93,83,1012,1.54,0.0,Clouds,broken clouds
