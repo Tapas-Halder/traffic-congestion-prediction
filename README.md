@@ -1,149 +1,31 @@
 # Traffic Congestion Prediction System
 
-Simple Kolkata-focused traffic congestion prediction system using real-world external API data.
+Kolkata-focused traffic congestion prediction using real-world TomTom traffic and OpenWeather data. No physical sensors are used.
 
-## Technology
+## Data pipeline
+TomTom + OpenWeather -> `data/raw/kolkata_traffic_weather.csv` -> `ml/clean_data.py` -> `data/processed/kolkata_traffic_weather_clean.csv` -> Random Forest -> FastAPI -> Streamlit.
 
-- Frontend: Streamlit
-- Backend/API: FastAPI
-- Traffic data: TomTom Traffic Flow API
-- Weather data: OpenWeather API
-- Machine Learning: Python + Random Forest
-- Data storage: CSV
-- Version control: GitHub
-- Deployment target: Vercel
+## ML Python files
+- `ml/clean_data.py`: validates columns, normalizes types, removes duplicate location/timestamp rows, writes processed CSV.
+- `ml/train_model.py`: trains/evaluates a Random Forest with chronological train/test split.
+- `ml/random_forest_model.py`: required FastAPI model entry point.
+- `ml/predict.py`: helper for direct model use.
+- `ml/test_model.py`: checks model artifact loading.
 
-## Project scope
-
-The first version focuses on Kolkata city. No physical sensors are used. Traffic and weather information comes from external APIs.
-
-## Current project structure
-
-```
-traffic-congestion-prediction/
-├── backend/
-│   ├── data_collector.py
-│   └── main.py
-├── frontend/
-│   └── app.py                 # Streamlit dashboard
-├── ml/
-│   ├── train_model.py         # Random Forest training
-│   └── predict.py             # Prediction helper
-├── data/
-│   └── raw/
-│       └── kolkata_traffic_weather.csv
-├── docs/
-├── .github/
-│   └── workflows/
-│       └── collect-kolkata-data.yml
-├── .env.example
-├── .gitignore
-└── README.md
+## Local commands
+```bash
+python -m pip install pandas scikit-learn joblib
+python ml/clean_data.py --input data/raw/kolkata_traffic_weather.csv --output data/processed/kolkata_traffic_weather_clean.csv
+python ml/train_model.py
+python ml/test_model.py
 ```
 
-## Data collection
+The trained artifact is written to `ml/artifacts/congestion_model.joblib` and is not committed. Train it in the backend deployment environment or provide the artifact through your deployment process.
 
-Automatic collection is triggered by an external scheduler (cron-job.org) through GitHub's `repository_dispatch` event.
+## Model limitations
+The target is the congestion class at the next available observation for the same location. Labels are proxies derived from speed ratio: >=0.90 Low, >=0.70 Moderate, otherwise Heavy. This is not independent ground truth, and the prediction horizon depends on collection interval. Do not claim a fixed 15-minute forecast unless the timestamps validate it. Evaluate per-class precision/recall as well as accuracy.
 
-Each collection run:
-1. calls OpenWeather once for Kolkata weather;
-2. calls TomTom separately for each monitored road checkpoint;
-3. appends the checkpoint rows to `data/raw/kolkata_traffic_weather.csv`;
-4. commits the updated CSV to `main`.
+## FastAPI contract
+`ml/random_forest_model.py` exposes `predict_congestion(features: dict[str, float])` and returns `(label, confidence)`. Required keys: `current_speed`, `free_flow_speed`, `speed_ratio`, `traffic_confidence`, `temperature`, `humidity`, `rain_1h`, `hour`, `day_of_week`.
 
-The external scheduler is configured separately from this repository. For testing, it can run every 5 minutes; after successful testing, use every 15 minutes.
-
-### Automatic collection
-
-The GitHub workflow supports:
-- manual `workflow_dispatch` for testing;
-- external `repository_dispatch` from the scheduler.
-
-The external scheduler sends:
-- POST to GitHub's repository dispatch endpoint;
-- event type: `collect-kolkata-data`;
-- a GitHub token with repository Contents write permission.
-
-Keep the TomTom and OpenWeather keys only in GitHub Actions Secrets. Do not put either API key in the external scheduler.
-
-For a manual test:
-**Actions -> Collect Kolkata traffic and weather data -> Run workflow**
-
-A successful collection adds new rows to `data/raw/kolkata_traffic_weather.csv`.
-
-Never commit API keys.
-
-Required GitHub Actions secrets:
-
-- `TOMTOM_API_KEY`
-- `OPENWEATHER_API_KEY`
-
-Local development can use a `.env` file.
-
-## ML
-
-The ML team will initially use synthetic data only to develop the pipeline.
-
-Model: Random Forest.
-
-Target:
-
-- Low
-- Medium
-- High
-
-When enough real API data is available, the model must be retrained and evaluated with the real dataset.
-
-No Jupyter Notebook or Colab is required. Keep the ML implementation in Python `.py` files.
-
-## Frontend
-
-The frontend is a Streamlit application.
-
-The dashboard will show:
-- Kolkata traffic status
-- current speed
-- weather
-- temperature
-- humidity
-- rainfall
-- Random Forest congestion prediction
-
-The Streamlit frontend will later call FastAPI endpoints.
-
-## Final data flow
-
-TomTom + OpenWeather
-        ↓
-Data Collector
-        ↓
-CSV
-        ↓
-Random Forest
-        ↓
-FastAPI
-        ↓
-Streamlit
-        ↓
-Kolkata Traffic Dashboard
-
-## Git workflow
-
-Team members should work on their own branches.
-
-Branch -> Commit -> Push -> Pull Request -> Team Leader review -> Merge
-
-## Development status
-
-- Backend/API: Done
-- Data collection automation: External scheduler + GitHub repository dispatch configured
-- ML: Random Forest in progress
-- Frontend: Streamlit in progress
-- Integration: Pending
-- Deployment: Pending
-
-## Team
-
-- Team Leader: Backend & API
-- ML Team: Random Forest model
-- Frontend Team: Streamlit dashboard + documentation
+Keep API keys in GitHub Actions Secrets or local ignored `.env`; never commit secrets. Work on a feature branch and open a Pull Request for team-leader review.
