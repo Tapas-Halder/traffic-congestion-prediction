@@ -1,50 +1,49 @@
-# Traffic Congestion Prediction System — Kolkata
+# Kolkata Traffic Congestion Prediction System
 
-A Python project using TomTom traffic and OpenWeather weather observations for Kolkata, a Random Forest classifier, a FastAPI interface, and a Streamlit dashboard. No physical sensors.
+Streamlit Community Cloud deployable traffic and weather dashboard for Kolkata, using real TomTom and OpenWeather API data, GitHub Actions collection, and Python Random Forest prediction.
 
-## Deployment architecture
+## Streamlit Community Cloud (recommended free setup)
 
-- **Frontend:** Streamlit Community Cloud, entry point `frontend/app.py`.
-- **Backend:** FastAPI requires a separate running Python service if the frontend continues to call HTTP endpoints. Streamlit Community Cloud does **not** host a separate persistent FastAPI server automatically.
-- **ML:** Python `.py` scripts; model training and inference must be wired into the deployed backend or into Streamlit itself.
-- **Data collection:** GitHub Actions triggered manually or by external `repository_dispatch` scheduler; CSV at `data/raw/kolkata_traffic_weather.csv`.
+1. Open https://share.streamlit.io and select **Create app** → **Deploy a public app from GitHub**.
+2. Repository: `Tapas-Halder/traffic-congestion-prediction`; branch: `main`; entry point: `frontend/app.py`.
+3. Set **App settings → Secrets** with `TOMTOM_API_KEY = "..."` and `OPENWEATHER_API_KEY = "..."`. Rotate any keys previously shared in documents or chats. **Do not set BACKEND_URL** for the recommended in-process mode.
+4. The root `requirements.txt` installs Streamlit and ML/backend dependencies. The app imports the backend Python services directly: no separately hosted FastAPI server is needed.
+5. At first startup the app cleans `data/raw/kolkata_traffic_weather.csv` and attempts to train the 15-minute Random Forest model locally if no model artifact exists. Insufficient valid 15-minute observation pairs will show **Model unavailable**; it does not invent predictions.
+6. Click **Refresh data** and verify live traffic and weather for each Kolkata checkpoint.
 
-## Important: integration is not yet verified
+## Alternative: FastAPI service
 
-The current Streamlit frontend calls:
-- `GET /health`
-- `GET /api/v1/data/current` with latitude and longitude
-- `POST /api/v1/predict` with location, latitude and longitude
+Run `uvicorn app.main:app --app-dir backend --host 0.0.0.0 --port 8000` from repository root after installing `backend/requirements.txt`. Deploy it to an external Python hosting service and set Streamlit secret `BACKEND_URL = "https://your-api-host"`. That host must also have a trained model at `ml/artifacts/congestion_model.joblib`.
 
-Set `BACKEND_URL` to a **publicly reachable HTTPS FastAPI service** in Streamlit Community Cloud secrets. The default `http://127.0.0.1:8000` works only when FastAPI is running in the same local environment; it is not a hosted backend.
+## Data and ML
 
-The following expected paths were not found in the reviewed `main` branch and require implementation or confirmation of equivalent files:
-- `backend/main.py`
-- `ml/predict.py`
-- `data/processed/kolkata_traffic_weather_clean.csv`
-- `ml/artifacts/congestion_model.joblib`
+GitHub Actions **Collect Kolkata traffic and weather data** calls TomTom and OpenWeather and appends observations to `data/raw/kolkata_traffic_weather.csv`. Configure the same API keys as **GitHub Actions repository secrets**. The external scheduler triggers the `collect-kolkata-data` repository_dispatch event; monitor the workflow history.
 
-The training script `ml/train_model.py` defaults to the processed CSV path and saves a `.joblib` artifact. `.gitignore` currently excludes `.joblib` files. Establish a deliberate artifact delivery method (build-time training, release artifact, or controlled exception) before deployment.
+Manual local training:
 
-## Setup and testing
+```bash
+python ml/clean_data.py
+python ml/train_model.py
+python ml/test_model.py
+python tests/test_integration.py
+streamlit run frontend/app.py
+```
 
-1. Configure `TOMTOM_API_KEY` and `OPENWEATHER_API_KEY` as GitHub Actions secrets; never commit keys.
-2. In GitHub Actions run **Collect Kolkata traffic and weather data** manually and check that the raw CSV gains rows.
-3. Prepare a cleaned CSV from the raw observations; validate columns and timestamps.
-4. Train with `python ml/train_model.py --data data/processed/kolkata_traffic_weather_clean.csv --model ml/artifacts/congestion_model.joblib`.
-5. Implement and locally test the FastAPI endpoints above, including real inference.
-6. Run `pip install -r frontend/requirements.txt` and `streamlit run frontend/app.py` from the repository root; set `BACKEND_URL` to the running API.
-7. Deploy the API on a suitable Python host and configure its public HTTPS URL in Streamlit Community Cloud secrets.
-8. Deploy Streamlit with repository `Tapas-Halder/traffic-congestion-prediction`, branch `main`, entry point `frontend/app.py`; test every road, prediction, and error state.
+Model training requires sufficient real time-separated observations and multiple congestion classes. Do not substitute synthetic results as live predictions. All ML source code is Python `.py` files; the generated model artifact is a local `.joblib` file.
 
-## Repository dependencies
+## Source modules
 
-Root `requirements.txt` currently references `frontend/requirements.txt`. A separately deployed FastAPI service needs its own dependency installation including FastAPI, Uvicorn, scikit-learn, pandas, joblib and requests, with compatible pinned versions.
+- `backend/data_collector.py`: scheduled API collection to CSV
+- `backend/app/main.py`: optional FastAPI HTTP endpoints
+- `backend/app/services/`: TomTom, weather, feature preparation, inference adapter
+- `ml/clean_data.py`, `ml/train_model.py`, `ml/random_forest_model.py`: ML pipeline
+- `frontend/app.py`, `frontend/traffic_core.py`, `frontend/local_backend.py`: Streamlit dashboard and in-process API adapter
+- `scripts/prepare_model.py`: Streamlit startup training from historical observations
 
 ## Team workflow
 
-Use feature branches and pull requests: branch → commit → push → PR → review → merge to `main`.
+Work in feature branches; open pull requests for team-leader review and merge to `main` after tests.
 
-## Status
+## Validation status
 
-Data collection, training and frontend source files exist. Complete end-to-end integration, model availability, public API deployment and production dashboard operation **have not yet been verified**.
+Code paths are integrated for the in-process deployment, but a successful real API request, complete model training, and a working Streamlit Cloud deployment must still be verified using actual credentials and deployment logs.
