@@ -55,14 +55,14 @@ def _prepare_local_model():
     from scripts.prepare_model import main as prepare
     prepare()
     return True
-_prepare_local_model()
-
 st.set_page_config(
     page_title="TrafficIQ — Kolkata",
     page_icon="🚦",
     layout="wide",
     initial_sidebar_state="expanded",
 )
+
+_prepare_local_model()
 
 
 # ══════════════════════════════════════════════════════════════════════════════
