@@ -1,2 +1,2 @@
-# Streamlit Community Cloud installs this root requirements file.
 -r frontend/requirements.txt
+-r backend/requirements.txt
