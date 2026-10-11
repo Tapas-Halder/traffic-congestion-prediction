@@ -6,6 +6,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "backend"))
 sys.path.insert(0, str(ROOT))
 from app.services.collector import collect_current_data
+from app.config import settings
 from app.services.features import build_prediction_features
 from app.services.predictor import predict
 
@@ -13,7 +14,7 @@ def local_call(method, path, params=None, json_body=None):
     data = json_body or params or {}
     lat, lon = data.get("latitude"), data.get("longitude")
     if path == "/health":
-        return {"status": "ok", "mode": "in-process"}
+        return {"status": "ok", "mode": "in-process", "tomtom_configured": bool(settings.tomtom_api_key), "openweather_configured": bool(settings.openweather_api_key)}
     if path == "/api/v1/data/current" and method == "GET":
         return collect_current_data(lat, lon)
     if path == "/api/v1/predict" and method == "POST":
