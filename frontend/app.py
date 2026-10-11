@@ -437,7 +437,7 @@ def build_recommendation():
         return None
     lines = [f"Current speed at **{selected_name}** is **{traffic['current_speed']:.0f} km/h** "
              f"against a free-flow speed of **{traffic['free_flow_speed']:.0f} km/h**."]
-    if status_key == "High":
+    if status_key == "Heavy":
         lines.append("Heavy congestion — consider delaying the trip or choosing another route.")
     elif status_key == "Moderate":
         lines.append("Moderate congestion — allow extra travel time.")
@@ -453,7 +453,7 @@ def build_recommendation():
 
 with tab_overview:
     # Alerts only when a verified condition exists.
-    if status_key == "High":
+    if status_key == "Heavy":
         st.warning(f"⚠️ High congestion at **{selected_name}** based on live TomTom speed data.")
     if pred_label and prediction_color(pred_label) == "#f54242":
         st.warning(f"⚠️ The ML model predicts **{esc(pred_label)}** for **{selected_name}**.")
@@ -598,7 +598,7 @@ with tab_map:
 
     legend = "".join(
         f'<span style="color:{style["color"]}">●</span> {esc(style["label"])}<br>'
-        for style in (STATUS_STYLE["Low"], STATUS_STYLE["Moderate"], STATUS_STYLE["High"], STATUS_STYLE[None])
+        for style in (STATUS_STYLE["Low"], STATUS_STYLE["Moderate"], STATUS_STYLE["Heavy"], STATUS_STYLE[None])
     )
     kolkata_map.get_root().html.add_child(folium.Element(
         '<div style="position:fixed;bottom:24px;left:24px;background:#1e2435;border:1px solid #222838;'
