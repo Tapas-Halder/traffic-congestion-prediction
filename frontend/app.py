@@ -73,8 +73,8 @@ def as_bool(value) -> bool:
 
 
 # Default is for local development only. In production set BACKEND_URL to the deployed backend.
-BACKEND_URL = str(get_setting("BACKEND_URL", "http://127.0.0.1:8000")).strip().rstrip("/")
-if not BACKEND_URL.startswith(("http://", "https://")):
+BACKEND_URL = str(get_setting("BACKEND_URL", "local")).strip().rstrip("/")
+if BACKEND_URL != "local" and not BACKEND_URL.startswith(("http://", "https://")):
     st.error("BACKEND_URL must be a complete http(s) URL. Set it in Streamlit Community Cloud Secrets.")
     st.stop()
 REQUEST_TIMEOUT = float(get_setting("REQUEST_TIMEOUT_SECONDS", 10))
