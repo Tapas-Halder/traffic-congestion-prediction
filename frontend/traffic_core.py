@@ -32,12 +32,12 @@ IST = timezone(timedelta(hours=5, minutes=30))
 # PROVISIONAL THRESHOLDS — to be confirmed with the ML and backend teams.
 # ratio = current speed / free-flow speed (both from the TomTom data via the backend)
 # ══════════════════════════════════════════════════════════════════════════════
-TRAFFIC_THRESHOLDS = {"low": 0.75, "moderate": 0.50}
+TRAFFIC_THRESHOLDS = {"low": 0.90, "moderate": 0.70}
 
 STATUS_STYLE = {
     "Low": {"label": "Low congestion", "color": "#34d47a"},
     "Moderate": {"label": "Moderate congestion", "color": "#f58542"},
-    "High": {"label": "High congestion", "color": "#f54242"},
+    "Heavy": {"label": "Heavy congestion", "color": "#f54242"},
     None: {"label": UNAVAILABLE, "color": "#7b82a0"},
 }
 
@@ -49,7 +49,7 @@ def speed_ratio(current_speed, free_flow_speed):
 
 
 def classify_traffic(current_speed, free_flow_speed, thresholds=None):
-    """Return "Low", "Moderate", "High" or None (when the API did not give both speeds)."""
+    """Return "Low", "Moderate", "Heavy" or None (when the API did not give both speeds)."""
     thresholds = thresholds or TRAFFIC_THRESHOLDS
     ratio = speed_ratio(current_speed, free_flow_speed)
     if ratio is None:
@@ -58,7 +58,7 @@ def classify_traffic(current_speed, free_flow_speed, thresholds=None):
         return "Low"
     if ratio >= thresholds["moderate"]:
         return "Moderate"
-    return "High"
+    return "Heavy"
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -441,9 +441,9 @@ def load_history(path, location_name=None, max_points=500):
                 return columns[_norm_key(candidate)]
         return None
 
-    time_col = pick(["collected_at", "timestamp", "datetime", "date_time", "time", "date"])
-    speed_col = pick(["current_speed", "currentspeed", "speed", "avg_speed"])
-    free_col = pick(["free_flow_speed", "freeflowspeed", "freeflow_speed"])
+    time_col = pick(["timestamp_utc", "collected_at", "timestamp", "datetime", "date_time", "time", "date"])
+    speed_col = pick(["current_speed_kmph", "current_speed", "currentspeed", "speed", "avg_speed"])
+    free_col = pick(["free_flow_speed_kmph", "free_flow_speed", "freeflowspeed", "freeflow_speed"])
     loc_col = pick(["location", "location_name", "road", "road_name", "name"])
 
     if time_col is None or speed_col is None:
