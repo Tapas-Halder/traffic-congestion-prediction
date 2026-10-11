@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -6,6 +8,8 @@ from app.schemas import PredictionRequest
 from app.services.collector import collect_current_data
 from app.services.features import build_prediction_features
 from app.services.predictor import predict
+
+logger = logging.getLogger(__name__)
 
 app = FastAPI(title="Kolkata Traffic Congestion API", version="0.2.0")
 
@@ -61,7 +65,8 @@ def prediction(request: PredictionRequest) -> dict:
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     except Exception as exc:
-        raise HTTPException(status_code=502, detail=f"Prediction pipeline failed: {exc}") from exc
+        logger.exception("Unexpected ML prediction pipeline failure")
+        raise HTTPException(status_code=503, detail="ML prediction is temporarily unavailable; check Render logs and /api/v1/model/status") from exc
 
 
 @app.get("/api/v1/model/status")
@@ -76,5 +81,6 @@ def model_status() -> dict:
         bundle = load_model()
         return {"ready": True, "horizon_minutes": bundle.get("horizon_minutes"),
                 "features": bundle.get("features")}
-    except (ValueError, FileNotFoundError, KeyError, TypeError) as exc:
+    except Exception as exc:
+        logger.exception("Saved model failed to load")
         return {"ready": False, "reason": str(exc)}
