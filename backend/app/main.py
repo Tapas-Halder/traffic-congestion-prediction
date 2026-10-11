@@ -56,7 +56,9 @@ def prediction(request: PredictionRequest) -> dict:
             "source": "TomTom + OpenWeather + ML model",
             "collected_at": payload["collected_at"],
         }
-    except RuntimeError as exc:
+    except (RuntimeError, FileNotFoundError) as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"Prediction pipeline failed: {exc}") from exc
