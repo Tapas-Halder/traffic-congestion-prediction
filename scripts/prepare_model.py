@@ -1,9 +1,15 @@
 """Prepare a real-data ML artifact during Streamlit deployment."""
 from pathlib import Path
+import sys
+
+# Direct script execution puts scripts/ on sys.path, not the repository root.
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
 from ml.clean_data import clean_csv
 from ml.train_model import train
 
-ROOT = Path(__file__).resolve().parents[1]
 RAW = ROOT / "data/raw/kolkata_traffic_weather.csv"
 CLEAN = ROOT / "data/processed/kolkata_traffic_weather_clean.csv"
 MODEL = ROOT / "ml/artifacts/congestion_model.joblib"
