@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import html
 import os
+import sys
 from datetime import datetime
 from pathlib import Path
 
@@ -45,6 +46,16 @@ from traffic_core import (
     short_reason,
     speed_ratio,
 )
+
+# Prepare the trained model from the real historical CSV if the artifact is absent.
+if str(Path(__file__).resolve().parents[1]) not in sys.path:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+@st.cache_resource(show_spinner="Preparing Kolkata ML model…")
+def _prepare_local_model():
+    from scripts.prepare_model import main as prepare
+    prepare()
+    return True
+_prepare_local_model()
 
 st.set_page_config(
     page_title="TrafficIQ — Kolkata",
