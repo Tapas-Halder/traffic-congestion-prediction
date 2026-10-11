@@ -62,3 +62,19 @@ def prediction(request: PredictionRequest) -> dict:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"Prediction pipeline failed: {exc}") from exc
+
+
+@app.get("/api/v1/model/status")
+def model_status() -> dict:
+    """Check model availability without calling paid external APIs."""
+    from app.services.predictor import REPO_ROOT
+    from ml.random_forest_model import MODEL_PATH, load_model
+    if not MODEL_PATH.is_file():
+        return {"ready": False, "reason": "Model artifact missing; inspect Render build logs for MODEL NOT READY",
+                "model_path": str(MODEL_PATH)}
+    try:
+        bundle = load_model()
+        return {"ready": True, "horizon_minutes": bundle.get("horizon_minutes"),
+                "features": bundle.get("features")}
+    except (ValueError, FileNotFoundError, KeyError, TypeError) as exc:
+        return {"ready": False, "reason": str(exc)}
