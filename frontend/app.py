@@ -6,11 +6,11 @@ Data flow:  TomTom (traffic) + OpenWeather (weather)  ->  FastAPI backend  ->  M
 Rules this app follows (see the frontend guidelines):
   * Only data returned by the FastAPI backend is shown. No random, simulated or hardcoded
     traffic / weather / ML values. Missing data is shown as "Data unavailable".
-  * No API keys live in this code. The frontend only knows the backend URL.
+  * No API keys live in this code. Local mode reads API keys from environment/Streamlit secrets.
   * API failures show a clear message (data source / backend / ML model) and never crash the app.
 
 Run (from the repo root):   cd frontend && pip install -r requirements.txt && streamlit run app.py
-The FastAPI backend must be running separately (default http://127.0.0.1:8000).
+Streamlit Community Cloud defaults to local in-process backend services.
 """
 from __future__ import annotations
 
@@ -53,6 +53,16 @@ if str(Path(__file__).resolve().parents[1]) not in sys.path:
 @st.cache_resource(show_spinner="Preparing Kolkata ML model…")
 def _prepare_local_model():
     from scripts.prepare_model import main as prepare
+    # Streamlit secrets are not automatically exported as environment variables.
+    for name in ("TOMTOM_API_KEY", "OPENWEATHER_API_KEY"):
+        if not os.getenv(name):
+            try:
+                value = st.secrets.get(name)
+                if value:
+                    os.environ[name] = str(value)
+            except Exception:
+                pass
+    # Settings are instantiated on first import; import only after secrets are loaded.
     prepare()
     return True
 st.set_page_config(
