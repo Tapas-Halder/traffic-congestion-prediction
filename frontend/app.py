@@ -17,6 +17,7 @@ from __future__ import annotations
 import html
 import os
 from datetime import datetime
+from pathlib import Path
 
 import folium
 import plotly.graph_objects as go
@@ -75,7 +76,7 @@ def as_bool(value) -> bool:
 BACKEND_URL = str(get_setting("BACKEND_URL", "http://127.0.0.1:8000")).rstrip("/")
 REQUEST_TIMEOUT = float(get_setting("REQUEST_TIMEOUT_SECONDS", 10))
 HEALTH_TIMEOUT = 3.0
-HISTORICAL_CSV_PATH = str(get_setting("HISTORICAL_CSV_PATH", "data/historical_traffic.csv"))
+HISTORICAL_CSV_PATH = str(get_setting("HISTORICAL_CSV_PATH", str(Path(__file__).resolve().parents[1] / "data/raw/kolkata_traffic_weather.csv")))
 # If the backend cannot take a location yet, set SEND_LOCATION_TO_BACKEND=false to send
 # no location (GET without params / POST with {}) so the backend uses its default Kolkata location.
 SEND_LOCATION = as_bool(get_setting("SEND_LOCATION_TO_BACKEND", "true"))
