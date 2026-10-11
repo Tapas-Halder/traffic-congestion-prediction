@@ -6,8 +6,8 @@ from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-sys.path.insert(0, str(ROOT / "backend"))
 sys.path.insert(0, str(ROOT / "frontend"))
+sys.path.insert(0, str(ROOT / "backend"))
 
 from fastapi.testclient import TestClient
 from app.main import app
