@@ -147,6 +147,20 @@ def call_backend(base_url, method, path, *, params=None, json_body=None, timeout
       {"ok": False, "error": {kind, layer, message, status, detail}}
     It never raises for network or HTTP problems, so the Streamlit app cannot crash on them.
     """
+    if base_url == "local":
+        try:
+            from local_backend import local_call
+            data = local_call(method, path, params=params, json_body=json_body)
+            return {"ok": True, "data": data, "status": 200,
+                    "fetched_at": datetime.now(IST).isoformat(timespec="seconds")}
+        except FileNotFoundError as exc:
+            return {"ok": False, "error": make_error("model", "ml_model", str(exc))}
+        except (ValueError, RuntimeError) as exc:
+            layer = "ml_model" if path.endswith("/predict") else "data_source"
+            return {"ok": False, "error": make_error("request", layer, str(exc))}
+        except Exception as exc:
+            return {"ok": False, "error": make_error("request", "data_source",
+                    f"Local pipeline failed ({type(exc).__name__}): {exc}")}
     url = f"{base_url.rstrip('/')}{path}"
     try:
         response = requests.request(method, url, params=params, json=json_body, timeout=timeout)
