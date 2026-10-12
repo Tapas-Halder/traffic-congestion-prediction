@@ -47,10 +47,13 @@ def current_data(
 
 @app.post("/api/v1/predict")
 def prediction(request: PredictionRequest) -> dict:
-    """Collect live inputs, prepare ML features, and run the trained model."""
+    """Collect live inputs, validate features and run the trained model."""
+    stage = "collect_live_data"
     try:
         payload = collect_current_data(request.latitude, request.longitude)
+        stage = "prepare_features"
         features = build_prediction_features(payload)
+        stage = "model_inference"
         result = predict(features)
         return {
             "city": settings.city,
@@ -60,13 +63,25 @@ def prediction(request: PredictionRequest) -> dict:
             "source": "TomTom + OpenWeather + ML model",
             "collected_at": payload["collected_at"],
         }
-    except (RuntimeError, FileNotFoundError) as exc:
-        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except (FileNotFoundError, RuntimeError) as exc:
+        logger.exception("Prediction unavailable at stage=%s", stage)
+        raise HTTPException(status_code=503, detail={
+            "error": "prediction_unavailable", "stage": stage,
+            "message": str(exc)[:250],
+        }) from exc
     except ValueError as exc:
-        raise HTTPException(status_code=422, detail=str(exc)) from exc
+        logger.warning("Invalid prediction input at stage=%s: %s", stage, exc)
+        raise HTTPException(status_code=422, detail={
+            "error": "invalid_prediction_input", "stage": stage,
+            "message": str(exc)[:250],
+        }) from exc
     except Exception as exc:
-        logger.exception("Unexpected ML prediction pipeline failure")
-        raise HTTPException(status_code=503, detail="ML prediction is temporarily unavailable; check Render logs and /api/v1/model/status") from exc
+        logger.exception("Unexpected prediction error at stage=%s", stage)
+        raise HTTPException(status_code=503, detail={
+            "error": "prediction_unavailable", "stage": stage,
+            "exception_type": type(exc).__name__,
+            "message": "See Render logs for traceback",
+        }) from exc
 
 
 @app.get("/api/v1/model/status")
