@@ -10,7 +10,7 @@ Rules this app follows (see the frontend guidelines):
   * API failures show a clear message (data source / backend / ML model) and never crash the app.
 
 Run (from the repo root):   cd frontend && pip install -r requirements.txt && streamlit run app.py
-Streamlit Community Cloud defaults to local in-process backend services.
+Streamlit Community Cloud uses the deployed FastAPI URL configured in BACKEND_URL.
 """
 from __future__ import annotations
 
@@ -72,7 +72,15 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-_prepare_local_model()
+# A hosted FastAPI server already owns ML inference and model training.
+# Do not import joblib/scikit-learn or train on Streamlit when using Render.
+try:
+    _remote_backend = os.getenv("BACKEND_URL") or st.secrets.get("BACKEND_URL", "")
+except Exception:
+    _remote_backend = os.getenv("BACKEND_URL", "")
+if not str(_remote_backend).strip() or str(_remote_backend).strip().lower() == "local":
+    st.error("Configure BACKEND_URL in Streamlit Cloud Secrets to your Render FastAPI URL.")
+    st.stop()
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -94,7 +102,7 @@ def as_bool(value) -> bool:
 
 
 # Default is for local development only. In production set BACKEND_URL to the deployed backend.
-BACKEND_URL = str(get_setting("BACKEND_URL", "local")).strip().rstrip("/")
+BACKEND_URL = str(get_setting("BACKEND_URL", "")).strip().rstrip("/")
 if BACKEND_URL != "local" and not BACKEND_URL.startswith(("http://", "https://")):
     st.error("BACKEND_URL must be a complete http(s) URL. Set it in Streamlit Community Cloud Secrets.")
     st.stop()
