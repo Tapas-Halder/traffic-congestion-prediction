@@ -409,7 +409,7 @@ with k4:
 
 st.write("")
 tab_overview, tab_roads, tab_map, tab_route, tab_pipeline = st.tabs(
-    ["📊 Overview", "🛣️ Roads", "🗺️ Map", "📍 Point-to-point", "⚙️ Pipeline"]
+    ["📊 Overview", "🛣️ Roads", "🗺️ Map", "🛣️ Route", "⚙️ Pipeline"]
 )
 
 
@@ -623,38 +623,60 @@ with tab_map:
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# TAB 4 — POINT-TO-POINT DISTANCE  (Task Ten)
+# TAB 4 — TOMTOM ROAD ROUTING WITH SAMPLED LIVE TRAFFIC
 # ══════════════════════════════════════════════════════════════════════════════
 with tab_route:
-    st.caption("Point-to-point distance is measured in a straight line, not along roads. Travel time and ETA are not available.")
+    st.caption("Actual drivable road route from TomTom. Traffic colours are sampled estimates, not continuous road-wide measurements.")
     r1, r2 = st.columns(2)
     from_place = r1.selectbox("🟢 Starting point", KNOWN_PLACES, index=0, key="route_from")
     to_place = r2.selectbox("🔴 Destination", KNOWN_PLACES, index=min(2, len(KNOWN_PLACES) - 1), key="route_to")
+    st.caption("🟢 Free flow  ·  🟠 Moderate  ·  🔴 Heavy  ·  ⚪ Data unavailable")
 
     if from_place == to_place:
         st.info("Choose two different locations.")
     else:
         (lat1, lon1), (lat2, lon2) = PLACE_COORDS[from_place], PLACE_COORDS[to_place]
-        m1, m2, m3 = st.columns(3)
-        m1.metric("Straight-line distance", f"{haversine_km(lat1, lon1, lat2, lon2):.1f} km",
-                  help="Great-circle distance, not the road distance.")
-        for column, name in ((m2, from_place), (m3, to_place)):
-            result = current_results[name]
-            if result["ok"]:
-                t = result["parsed"]["traffic"]
-                label = STATUS_STYLE[classify_traffic(t["current_speed"], t["free_flow_speed"])]["label"]
-            else:
-                label = UNAVAILABLE
-            column.metric(f"Traffic at {name}", label)
-
-        route_map = folium.Map(location=[(lat1 + lat2) / 2, (lon1 + lon2) / 2], zoom_start=12,
-                               tiles="OpenStreetMap")
-        folium.PolyLine([[lat1, lon1], [lat2, lon2]], color="#4e9fff", weight=4, opacity=0.8,
-                        dash_array="10 8", tooltip="Straight line (not a road route)").add_to(route_map)
-        folium.Marker([lat1, lon1], tooltip=f"From: {from_place}", icon=folium.Icon(color="green")).add_to(route_map)
-        folium.Marker([lat2, lon2], tooltip=f"To: {to_place}", icon=folium.Icon(color="red")).add_to(route_map)
-        st_folium(route_map, height=380, use_container_width=True, returned_objects=[], key="route_map")
-
+        @st.cache_data(ttl=300, show_spinner=False)
+        def fetch_road_route(base_url, start_lat, start_lon, end_lat, end_lon):
+            return call_backend(
+                base_url, "GET", "/api/v1/route",
+                params={"from_lat": start_lat, "from_lon": start_lon,
+                        "to_lat": end_lat, "to_lon": end_lon},
+                timeout=REQUEST_TIMEOUT_SECONDS,
+            )
+        with st.spinner("Loading road route and live traffic samples…"):
+            route_result = fetch_road_route(BACKEND_URL, lat1, lon1, lat2, lon2)
+        if not route_result["ok"]:
+            st.error("Road route unavailable. " + str(route_result["error"].get("detail") or route_result["error"]["message"]))
+        else:
+            route_data = route_result["data"]
+            coords = route_data.get("coordinates") or []
+            samples = route_data.get("samples") or []
+            distance = route_data.get("distance_meters")
+            travel_time = route_data.get("travel_time_seconds")
+            delay = route_data.get("traffic_delay_seconds")
+            c1, c2, c3 = st.columns(3)
+            c1.metric("Road distance", f"{distance / 1000:.1f} km" if isinstance(distance, (int, float)) else "Unavailable")
+            c2.metric("Estimated travel time", f"{round(travel_time / 60)} min" if isinstance(travel_time, (int, float)) else "Unavailable")
+            c3.metric("Traffic delay", f"{round(delay / 60)} min" if isinstance(delay, (int, float)) else "Unavailable")
+            if len(coords) >= 2:
+                route_map = folium.Map(location=[(lat1 + lat2) / 2, (lon1 + lon2) / 2], zoom_start=12, tiles="OpenStreetMap")
+                colors = {"low": "#34d47a", "moderate": "#f58542", "heavy": "#f54242", "unavailable": "#7b82a0"}
+                if samples:
+                    # Each colour extends only between sample midpoints. This is an approximation.
+                    for i, sample in enumerate(samples):
+                        left = 0 if i == 0 else (samples[i-1]["index"] + sample["index"]) // 2
+                        right = len(coords)-1 if i == len(samples)-1 else (sample["index"] + samples[i+1]["index"]) // 2
+                        if right > left:
+                            folium.PolyLine(coords[left:right+1], color=colors.get(sample["status"], "#7b82a0"),
+                                            weight=6, opacity=0.85, tooltip="Sampled traffic: " + sample["status"]).add_to(route_map)
+                else:
+                    folium.PolyLine(coords, color="#7b82a0", weight=6, opacity=.85).add_to(route_map)
+                folium.Marker([lat1, lon1], tooltip="From: " + from_place, icon=folium.Icon(color="green")).add_to(route_map)
+                folium.Marker([lat2, lon2], tooltip="To: " + to_place, icon=folium.Icon(color="red")).add_to(route_map)
+                route_map.fit_bounds(coords)
+                st_folium(route_map, height=400, use_container_width=True, returned_objects=[], key="road_route_map")
+            st.caption("Traffic colour is estimated from up to 10 TomTom Flow observations sampled along the road route. Unobserved stretches may differ.")
 
 # ══════════════════════════════════════════════════════════════════════════════
 # TAB 5 — PIPELINE  (Task Eleven) — each step reflects what was actually observed
