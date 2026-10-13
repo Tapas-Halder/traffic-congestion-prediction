@@ -48,9 +48,9 @@ def get_route(
     if len(coords) < 2:
         raise HTTPException(502, detail="TomTom route geometry is unavailable")
     summary = route.get("summary", {})
-    # At most 10 sampling calls per selected route to limit quota usage.
+    # At most 6 sampling calls per selected route to limit quota usage.
     # These are *sampled point observations*, not full road-segment coverage.
-    sample_count = min(10, max(2, len(coords) // 15))
+    sample_count = min(6, max(2, len(coords) // 25))
     indices = sorted(set(round(i * (len(coords) - 1) / (sample_count - 1)) for i in range(sample_count)))
     samples = []
     for index in indices:
