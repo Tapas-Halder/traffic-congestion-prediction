@@ -1,4 +1,4 @@
-"""TomTom road routing with sampled traffic flow. Never invent route geometry or speed."""
+"""Road routing with TomTom primary, OSRM fallback and sampled TomTom traffic."""
 import logging
 import requests
 from fastapi import APIRouter, HTTPException, Query
@@ -8,6 +8,7 @@ from app.services.tomtom import get_traffic_data
 logger = logging.getLogger(__name__)
 router = APIRouter()
 ROUTING_URL = "https://api.tomtom.com/routing/1/calculateRoute/{points}/json"
+OSRM_URL = "https://router.project-osrm.org/route/v1/driving/{from_lon},{from_lat};{to_lon},{to_lat}"
 
 def _status(flow):
     current, free = flow.get("currentSpeed"), flow.get("freeFlowSpeed")
@@ -28,6 +29,7 @@ def get_route(
     if abs(from_lat - to_lat) + abs(from_lon - to_lon) < 1e-7:
         raise HTTPException(422, detail="Choose different start and destination points")
     points = f"{from_lat},{from_lon}:{to_lat},{to_lon}"
+    provider = "tomtom"
     try:
         response = requests.get(
             ROUTING_URL.format(points=points),
@@ -39,31 +41,48 @@ def get_route(
         data = response.json()
     except requests.HTTPError as exc:
         status = exc.response.status_code if exc.response is not None else None
-        logger.error("TomTom Routing returned HTTP %s: %s", status,
-                     (exc.response.text[:500] if exc.response is not None else "no response"))
-        raise HTTPException(502, detail={
-            "error": "tomtom_routing_http_error",
-            "upstream_status": status,
-            "hint": ("Check TomTom Routing API entitlement or API key" if status in (401, 403)
-                     else "Check TomTom quota" if status == 429
-                     else "Check routing coordinates and API parameters" if status == 400
-                     else "See Render logs for upstream response"),
-        }) from exc
+        if status not in (401, 403):
+            logger.warning("TomTom Routing HTTP %s", status)
+            raise HTTPException(502, detail={"error": "tomtom_routing_http_error", "upstream_status": status}) from exc
+        logger.warning("TomTom Routing HTTP %s; trying OSRM fallback", status)
+        provider = "osrm"
     except requests.RequestException as exc:
         logger.exception("TomTom Routing network request failed")
-        raise HTTPException(502, detail={
-            "error": "tomtom_routing_network_error",
-            "exception_type": type(exc).__name__,
-            "hint": "Check Render logs for connection or timeout details",
-        }) from exc
-    routes = data.get("routes") or []
-    if not routes:
-        raise HTTPException(502, detail="TomTom returned no drivable road route")
-    route = routes[0]
-    coords = [[p["latitude"], p["longitude"]] for leg in route.get("legs", []) for p in leg.get("points", [])]
+        raise HTTPException(502, detail="TomTom Routing network request failed") from exc
+
+    if provider == "tomtom":
+        routes = data.get("routes") or []
+        if not routes:
+            raise HTTPException(502, detail="TomTom returned no drivable road route")
+        route = routes[0]
+        coords = [[p["latitude"], p["longitude"]] for leg in route.get("legs", []) for p in leg.get("points", [])]
+        summary = route.get("summary", {})
+        distance = summary.get("lengthInMeters")
+        travel_time = summary.get("travelTimeInSeconds")
+        delay = summary.get("trafficDelayInSeconds")
+    else:
+        try:
+            fallback = requests.get(
+                OSRM_URL.format(from_lon=from_lon, from_lat=from_lat, to_lon=to_lon, to_lat=to_lat),
+                params={"overview": "full", "geometries": "geojson", "steps": "false"},
+                timeout=20,
+            )
+            fallback.raise_for_status()
+            result = fallback.json()
+            if result.get("code") != "Ok" or not result.get("routes"):
+                raise ValueError("OSRM returned no drivable route")
+            route = result["routes"][0]
+            coords = [[lat, lon] for lon, lat in route["geometry"]["coordinates"]]
+            distance = route.get("distance")
+            # OSRM duration is not a live traffic-aware ETA.
+            travel_time = None
+            delay = None
+        except (requests.RequestException, ValueError, KeyError, TypeError) as exc:
+            logger.exception("OSRM fallback failed")
+            raise HTTPException(502, detail="TomTom Routing access denied and OSRM fallback unavailable") from exc
+
     if len(coords) < 2:
-        raise HTTPException(502, detail="TomTom route geometry is unavailable")
-    summary = route.get("summary", {})
+        raise HTTPException(502, detail="Road route geometry is unavailable")
     # At most 6 sampling calls per selected route to limit quota usage.
     # These are *sampled point observations*, not full road-segment coverage.
     sample_count = min(6, max(2, len(coords) // 25))
@@ -80,9 +99,10 @@ def get_route(
         samples.append({"index": index, "status": status})
     return {
         "coordinates": coords, "samples": samples,
-        "distance_meters": summary.get("lengthInMeters"),
-        "travel_time_seconds": summary.get("travelTimeInSeconds"),
-        "traffic_delay_seconds": summary.get("trafficDelayInSeconds"),
-        "traffic_source": "TomTom Flow API sampled along TomTom road route",
+        "distance_meters": distance,
+        "travel_time_seconds": travel_time,
+        "traffic_delay_seconds": delay,
+        "route_provider": provider,
+        "traffic_source": "TomTom Flow API sampled along road route",
         "coverage": "sampled_estimate",
     }
