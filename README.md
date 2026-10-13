@@ -7,7 +7,8 @@ A working student project using real TomTom traffic and OpenWeather observations
 1. **Scheduled collection:** External scheduler triggers GitHub Actions event `collect-kolkata-data` (or use manual workflow dispatch). `backend/data_collector.py` queries TomTom for 12 Kolkata road checkpoints and OpenWeather for Kolkata weather, appending rows to `data/raw/kolkata_traffic_weather.csv`.
 2. **Model:** `ml/clean_data.py` cleans historical data; `ml/train_model.py` trains a 15-minute-ahead Random Forest; `ml/random_forest_model.py` loads the trained artifact and predicts. Training uses actual historical observations; sufficient valid timestamp pairs and multiple classes are required.
 3. **Backend:** Render runs FastAPI (`backend/app/main.py`) and loads the trained model prepared during the build. The backend owns TomTom and OpenWeather API keys.
-4. **Frontend:** Streamlit Community Cloud runs `frontend/app.py` and calls the public Render FastAPI over HTTPS. No local ML training or API keys are needed on Streamlit.
+4. **Road routing:** `GET /api/v1/route` uses TomTom Routing API for real drivable road geometry and samples up to six TomTom Traffic Flow observations to colour approximate stretches green/orange/red/grey. Road distance and ETA come from TomTom route summary; colours are estimates between sampled points, not measured continuously. Routing entitlement and quota must be enabled for the TomTom key.
+5. **Frontend:** Streamlit Community Cloud runs `frontend/app.py` and calls the public Render FastAPI over HTTPS. No local ML training or API keys are needed on Streamlit.
 
 ## Live services and verification
 
@@ -16,6 +17,7 @@ A working student project using real TomTom traffic and OpenWeather observations
 - Current data: https://kolkata-traffic-api.onrender.com/api/v1/data/current?latitude=22.5726&longitude=88.3639
 - Model status: https://kolkata-traffic-api.onrender.com/api/v1/model/status
 - Interactive API documentation: https://kolkata-traffic-api.onrender.com/docs
+- Route: `/api/v1/route?from_lat=22.585&from_lon=88.346&to_lat=22.58&to_lon=88.41` (requires TomTom Routing API access).
 - Prediction: `POST /api/v1/predict` with JSON `{"latitude":22.5726,"longitude":88.3639}`.
 
 The team reported successful Render health, live data and ML prediction (HTTP 200), and successful Streamlit deployment on 13 October 2026. This is a report of observed tests, not an uptime guarantee.
