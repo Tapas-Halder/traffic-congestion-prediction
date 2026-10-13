@@ -642,7 +642,7 @@ with tab_route:
                 base_url, "GET", "/api/v1/route",
                 params={"from_lat": start_lat, "from_lon": start_lon,
                         "to_lat": end_lat, "to_lon": end_lon},
-                timeout=REQUEST_TIMEOUT_SECONDS,
+                timeout=REQUEST_TIMEOUT,
             )
         with st.spinner("Loading road route and live traffic samples…"):
             route_result = fetch_road_route(BACKEND_URL, lat1, lon1, lat2, lon2)
