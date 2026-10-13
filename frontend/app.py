@@ -409,7 +409,7 @@ with k4:
 
 st.write("")
 tab_overview, tab_roads, tab_map, tab_route, tab_pipeline = st.tabs(
-    ["📊 Overview", "🛣️ Roads", "🗺️ Map", "🧪 Route (demo)", "⚙️ Pipeline"]
+    ["📊 Overview", "🛣️ Roads", "🗺️ Map", "📍 Point-to-point", "⚙️ Pipeline"]
 )
 
 
@@ -623,14 +623,10 @@ with tab_map:
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# TAB 4 — ROUTE (DEMO)  (Task Ten)
+# TAB 4 — POINT-TO-POINT DISTANCE  (Task Ten)
 # ══════════════════════════════════════════════════════════════════════════════
 with tab_route:
-    st.warning(
-        "🧪 **Demo.** Distances here are **straight-line** estimates between two points — not road routes. "
-        "No travel time or ETA is shown: real routes, distances and ETAs need the TomTom Routing API, "
-        "which has not been integrated yet."
-    )
+    st.caption("Point-to-point distance is measured in a straight line, not along roads. Travel time and ETA are not available.")
     r1, r2 = st.columns(2)
     from_place = r1.selectbox("🟢 Starting point", KNOWN_PLACES, index=0, key="route_from")
     to_place = r2.selectbox("🔴 Destination", KNOWN_PLACES, index=min(2, len(KNOWN_PLACES) - 1), key="route_to")
@@ -652,7 +648,7 @@ with tab_route:
             column.metric(f"Traffic at {name}", label)
 
         route_map = folium.Map(location=[(lat1 + lat2) / 2, (lon1 + lon2) / 2], zoom_start=12,
-                               tiles="CartoDB dark_matter")
+                               tiles="OpenStreetMap")
         folium.PolyLine([[lat1, lon1], [lat2, lon2]], color="#4e9fff", weight=4, opacity=0.8,
                         dash_array="10 8", tooltip="Straight line (not a road route)").add_to(route_map)
         folium.Marker([lat1, lon1], tooltip=f"From: {from_place}", icon=folium.Icon(color="green")).add_to(route_map)
