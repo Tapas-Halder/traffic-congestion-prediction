@@ -626,7 +626,7 @@ with tab_map:
 # TAB 4 — TOMTOM ROAD ROUTING WITH SAMPLED LIVE TRAFFIC
 # ══════════════════════════════════════════════════════════════════════════════
 with tab_route:
-    st.caption("Actual drivable road route from TomTom. Traffic colours are sampled estimates, not continuous road-wide measurements.")
+    st.caption("Road route from TomTom, or OSRM if TomTom Routing access is denied. Traffic colours are sampled estimates, not continuous measurements.")
     r1, r2 = st.columns(2)
     from_place = r1.selectbox("🟢 Starting point", KNOWN_PLACES, index=0, key="route_from")
     to_place = r2.selectbox("🔴 Destination", KNOWN_PLACES, index=min(2, len(KNOWN_PLACES) - 1), key="route_to")
@@ -650,6 +650,9 @@ with tab_route:
             st.error("Road route unavailable. " + str(route_result["error"].get("detail") or route_result["error"]["message"]))
         else:
             route_data = route_result["data"]
+            provider = route_data.get("route_provider", "tomtom")
+            if provider == "osrm":
+                st.info("Road geometry: OpenStreetMap/OSRM fallback. Live traffic-aware ETA is unavailable; colours use sampled TomTom traffic data.")
             coords = route_data.get("coordinates") or []
             samples = route_data.get("samples") or []
             distance = route_data.get("distance_meters")
