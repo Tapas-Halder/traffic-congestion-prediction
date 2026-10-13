@@ -37,9 +37,25 @@ def get_route(
         )
         response.raise_for_status()
         data = response.json()
+    except requests.HTTPError as exc:
+        status = exc.response.status_code if exc.response is not None else None
+        logger.error("TomTom Routing returned HTTP %s: %s", status,
+                     (exc.response.text[:500] if exc.response is not None else "no response"))
+        raise HTTPException(502, detail={
+            "error": "tomtom_routing_http_error",
+            "upstream_status": status,
+            "hint": ("Check TomTom Routing API entitlement or API key" if status in (401, 403)
+                     else "Check TomTom quota" if status == 429
+                     else "Check routing coordinates and API parameters" if status == 400
+                     else "See Render logs for upstream response"),
+        }) from exc
     except requests.RequestException as exc:
-        logger.exception("TomTom Routing request failed")
-        raise HTTPException(502, detail="TomTom Routing API request failed; check key permissions and Render logs") from exc
+        logger.exception("TomTom Routing network request failed")
+        raise HTTPException(502, detail={
+            "error": "tomtom_routing_network_error",
+            "exception_type": type(exc).__name__,
+            "hint": "Check Render logs for connection or timeout details",
+        }) from exc
     routes = data.get("routes") or []
     if not routes:
         raise HTTPException(502, detail="TomTom returned no drivable road route")
