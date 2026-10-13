@@ -588,7 +588,7 @@ with tab_roads:
 # ══════════════════════════════════════════════════════════════════════════════
 with tab_map:
     st.markdown("#### Kolkata — traffic status by location")
-    kolkata_map = folium.Map(location=KOLKATA_CENTER, zoom_start=12, tiles="CartoDB dark_matter",
+    kolkata_map = folium.Map(location=KOLKATA_CENTER, zoom_start=12, tiles="OpenStreetMap",
                              control_scale=True)
     for loc in KOLKATA_LOCATIONS:
         result = current_results[loc["name"]]
