@@ -75,7 +75,8 @@ Set Render secrets `TOMTOM_API_KEY` and `OPENWEATHER_API_KEY`. Backend example: 
 
 ```toml
 BACKEND_URL = "https://kolkata-traffic-api.onrender.com"
-REQUEST_TIMEOUT_SECONDS = 90
+REQUEST_TIMEOUT_SECONDS = 60
+HEALTH_TIMEOUT_SECONDS = 60
 ```
 
 The old GitHub Actions CI and collector workflows are only on `Backup`. Historical CSV is retained; no automated collection runs from this simplified `main`.
@@ -92,6 +93,12 @@ This project is developed by a five-member team:
 | **Subhajit Podder** | **Machine Learning Developer — Part 2** | Machine learning model training and evaluation; traffic congestion prediction implementation. |
 | **Pammi Biswas** | **Documentation** | Project documentation. |
 
+
+## Backend timeout and workflow troubleshooting
+
+Render free instances can take time to wake after inactivity. The Streamlit health check previously timed out after 3 seconds; it now waits at least 60 seconds, and live requests also wait at least 60 seconds. If the error persists, confirm the Render service is running and deployed from `main`, verify its build/start commands above, and inspect its logs. The `/health` endpoint only confirms FastAPI responded; `/api/v1/data/current` needs valid TomTom/OpenWeather keys, and `/api/v1/model/status` checks ML readiness.
+
+**Important:** To keep exactly five top-level folders and a README, the GitHub Actions workflows remain archived in `Backup`. GitHub Actions requires `.github/workflows/` at the repository root, so automated CI cannot run on this simplified `main` layout unless that additional root folder is allowed. Offline test scripts are retained under `ml/` and `other-files/tests/`.
 
 ## Submission checklist
 
