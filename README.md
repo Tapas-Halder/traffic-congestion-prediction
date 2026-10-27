@@ -1,83 +1,87 @@
 # TrafficIQ — Kolkata Traffic Congestion Prediction System
 
-A working student project using real TomTom traffic and OpenWeather observations, a Python Random Forest classifier for 15-minute-ahead congestion, FastAPI on Render, and a Streamlit dashboard on Streamlit Community Cloud. No physical sensors or fabricated live observations.
+A five-member student project using real TomTom traffic and OpenWeather data, a Python Random Forest model for 15-minute-ahead congestion, FastAPI, and Streamlit. No physical sensors or fabricated live data.
 
-## Submission guide
+## Repository structure
 
-This repository is the five-member team's Kolkata project submission. **Start here:** read the architecture below, check the [documentation index](docs/README.md), and follow the [integration runbook](INTEGRATION.md) to run and test the complete system. The real historical dataset is committed at `data/raw/kolkata_traffic_weather.csv` and must be kept. The original repository state before submission cleanup is preserved in the [Backup branch](https://github.com/Tapas-Halder/traffic-congestion-prediction/tree/Backup).
-
-The data collection workflow is **paused intentionally** after 10,000+ observations. Existing historical data supports model training; live dashboard requests still depend on available external API credentials and service availability.
-
-## Architecture
-
-1. **Scheduled collection:** External scheduler triggers GitHub Actions event `collect-kolkata-data` (or use manual workflow dispatch). `backend/data_collector.py` queries TomTom for 12 Kolkata road checkpoints and OpenWeather for Kolkata weather, appending rows to `data/raw/kolkata_traffic_weather.csv`.
-2. **Model:** `ml/clean_data.py` cleans historical data; `ml/train_model.py` trains a 15-minute-ahead Random Forest; `ml/random_forest_model.py` loads the trained artifact and predicts. Training uses actual historical observations; sufficient valid timestamp pairs and multiple classes are required.
-3. **Backend:** Render runs FastAPI (`backend/app/main.py`) and loads the trained model prepared during the build. The backend owns TomTom and OpenWeather API keys.
-4. **Road routing:** `GET /api/v1/route` uses TomTom Routing API for drivable road geometry, falling back to the public OSRM service on TomTom 401/403; it samples up to six TomTom Traffic Flow observations to colour approximate stretches green/orange/red/grey. Road distance comes from the routing provider. Traffic-aware ETA and delay are shown only for TomTom routes, never for OSRM fallback. Colours are estimates between sampled points, not measured continuously. Public OSRM is best-effort, rate-limited and not guaranteed for production.
-5. **Frontend:** Streamlit Community Cloud runs `frontend/app.py` and calls the public Render FastAPI over HTTPS. No local ML training or API keys are needed on Streamlit.
-
-## Live services and verification
-
-- Render backend: https://kolkata-traffic-api.onrender.com
-- Health: https://kolkata-traffic-api.onrender.com/health
-- Current data: https://kolkata-traffic-api.onrender.com/api/v1/data/current?latitude=22.5726&longitude=88.3639
-- Model status: https://kolkata-traffic-api.onrender.com/api/v1/model/status
-- Interactive API documentation: https://kolkata-traffic-api.onrender.com/docs
-- Route: `/api/v1/route?from_lat=22.585&from_lon=88.346&to_lat=22.58&to_lon=88.41` (requires TomTom Routing API access).
-- Prediction: `POST /api/v1/predict` with JSON `{"latitude":22.5726,"longitude":88.3639}`.
-
-The team reported successful Render health, live data and ML prediction (HTTP 200), and successful Streamlit deployment on 13 October 2026. This is a report of observed tests, not an uptime guarantee.
-
-## Deploy Render FastAPI
-
-Repository: `Tapas-Halder/traffic-congestion-prediction`; branch `main`; root directory empty.
-
-- Build: `pip install -r backend/requirements.txt && python scripts/prepare_model.py`
-- Start: `uvicorn app.main:app --app-dir backend --host 0.0.0.0 --port $PORT`
-- Environment secrets: `TOMTOM_API_KEY`, `OPENWEATHER_API_KEY`.
-
-The build prints `MODEL READY` or `MODEL NOT READY`. A ready model is necessary for inference. New historical CSV commits do **not** retrain an already-running Render service automatically unless Render rebuilds and executes model preparation again.
-
-## Deploy Streamlit
-
-Streamlit Community Cloud → New app → repository `Tapas-Halder/traffic-congestion-prediction`, branch `main`, main file `frontend/app.py`.
-
-Set **Streamlit Secrets**:
-
-```toml
-BACKEND_URL = "https://kolkata-traffic-api.onrender.com"
-REQUEST_TIMEOUT_SECONDS = 90
+```text
+traffic-congestion-prediction/
+├── frontend/              # Streamlit dashboard and requirements
+├── backend/               # FastAPI, API collector, ML, tests and requirements
+│   ├── app/
+│   ├── ml/
+│   ├── tests/
+│   ├── prepare_model.py
+│   └── requirements.txt
+├── data/                  # Real Kolkata historical CSV
+└── README.md
 ```
 
-Root `requirements.txt` installs only frontend dependencies. Backend/ML dependencies are installed on Render from `backend/requirements.txt`.
+Original files and the former GitHub Actions workflows remain safe in the [Backup branch](https://github.com/Tapas-Halder/traffic-congestion-prediction/tree/Backup). Data collection is intentionally paused after 10,000+ real observations.
 
-## GitHub Actions CSV collection
+## How it works
 
-Workflow: `.github/workflows/collect-kolkata-data.yml`
+1. `backend/data_collector.py` collects TomTom traffic and OpenWeather observations at Kolkata checkpoints, saved in `data/raw/kolkata_traffic_weather.csv`.
+2. `backend/ml/clean_data.py` cleans the real observations. `backend/ml/train_model.py` trains a Random Forest using 15-minute-ahead labels.
+3. `backend/ml/random_forest_model.py` loads the trained model for FastAPI predictions.
+4. `backend/app/main.py` provides health, current readings, model status and prediction APIs. `backend/app/routes.py` provides routing with TomTom and a limited OSRM fallback.
+5. `frontend/app.py` shows the traffic, weather, map, routing and model results through FastAPI.
 
-- GitHub repository **Settings → Secrets and variables → Actions**: configure `TOMTOM_API_KEY` and `OPENWEATHER_API_KEY`.
-- External scheduler: dispatch the event `collect-kolkata-data`; check scheduler credentials and schedule separately.
-- GitHub → Actions → **Collect Kolkata traffic and weather data** → **Run workflow** will currently skip the collection job because it is intentionally paused. Re-enable the job only if new collection is required.
-- Successful runs append new observations to `data/raw/kolkata_traffic_weather.csv` and commit **only this CSV** to `main`. Partial checkpoint failures are logged.
-- Verify the latest CSV timestamps and workflow history. A successful deploy does not prove the external scheduler continues to fire.
+## Run locally
 
-## Local development
+Python 3.11 recommended. Configure `TOMTOM_API_KEY` and `OPENWEATHER_API_KEY` as environment variables (see `backend/.env.example`). Never commit actual keys.
+
+From the repository root:
 
 ```bash
-pip install -r backend/requirements.txt
-python scripts/prepare_model.py
+python -m pip install -r backend/requirements.txt
+python backend/prepare_model.py
 uvicorn app.main:app --app-dir backend --reload
 ```
 
 In another terminal:
 
 ```bash
-pip install -r frontend/requirements.txt
-# Configure BACKEND_URL to the running API or use Streamlit Secrets
+python -m pip install -r frontend/requirements.txt
 streamlit run frontend/app.py
 ```
 
-Offline tests: `python ml/test_model.py` and `python tests/test_integration.py`. Keep ML implementation in Python `.py` files. Generated `.joblib` artifacts are ignored by Git; Render prepares them from historical CSV.
+Frontend defaults to `http://127.0.0.1:8000`. Set `BACKEND_URL` to the deployed HTTPS backend in Streamlit Secrets.
+
+## Offline tests and ML evaluation
+
+```bash
+python backend/ml/test_model.py
+python backend/tests/test_integration.py
+python backend/prepare_model.py
+```
+
+Verify `/health`, `/api/v1/model/status`, `/api/v1/data/current` and `POST /api/v1/predict`. Offline tests use mocks and do not prove that live API keys or deployment work.
+
+## Deployment
+
+**Render backend:** repository root, branch `main`. Build:
+
+```bash
+pip install -r backend/requirements.txt && python backend/prepare_model.py
+```
+
+Start:
+
+```bash
+uvicorn app.main:app --app-dir backend --host 0.0.0.0 --port $PORT
+```
+
+Set Render secrets `TOMTOM_API_KEY` and `OPENWEATHER_API_KEY`. Backend example: https://kolkata-traffic-api.onrender.com
+
+**Streamlit Community Cloud:** repository `Tapas-Halder/traffic-congestion-prediction`, branch `main`, entrypoint `frontend/app.py`, dependencies `frontend/requirements.txt`. Configure Streamlit Secrets:
+
+```toml
+BACKEND_URL = "https://kolkata-traffic-api.onrender.com"
+REQUEST_TIMEOUT_SECONDS = 90
+```
+
+The old GitHub Actions CI and collector workflows are only on `Backup`. Historical CSV is retained; no automated collection runs from this simplified `main`.
 
 ## Team Members and Roles
 
@@ -91,20 +95,11 @@ This project is developed by a five-member team:
 | **Subhajit Podder** | **Machine Learning Developer — Part 2** | Machine learning model training and evaluation; traffic congestion prediction implementation. |
 | **Pammi Biswas** | **Documentation** | Project documentation. |
 
-## Team collaboration
-
-The team leader maintains `main`. Members work in their own branches, open pull requests, and merge after review. Never commit API keys or Streamlit Secrets.
 
 ## Submission checklist
 
-- [x] Source code for frontend, backend, ML and integration is organized in separate folders.
-- [x] Real Kolkata traffic/weather CSV retained in `data/raw/`.
-- [x] Five team members and their assigned roles documented.
-- [x] Original pre-cleanup snapshot preserved on `Backup` branch.
-- [ ] Run offline tests and confirm ML training on the submitted dataset.
-- [ ] Verify live API credentials, model status, prediction and frontend-to-backend connectivity.
-- [ ] Capture final screenshots and evaluation results for the project report.
-
-## Notes
-
-Render free instances can sleep when idle; frontend requests may take longer after wake-up. The historical CSV is intentionally retained and must not be deleted during cleanup. Model predictions are estimates, not guaranteed traffic conditions.
+- [x] Only `frontend/`, `backend/`, `data/`, and `README.md` at the root.
+- [x] Real dataset, ML source, backend, frontend and Backup preserved.
+- [ ] Run offline tests and train the model on submitted data.
+- [ ] Update Render build command, redeploy and check model status.
+- [ ] Verify Streamlit integration and capture final screenshots and metrics.
