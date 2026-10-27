@@ -87,8 +87,9 @@ BACKEND_URL = str(get_setting("BACKEND_URL", "")).strip().rstrip("/")
 if BACKEND_URL != "local" and not BACKEND_URL.startswith(("http://", "https://")):
     st.error("BACKEND_URL must be a complete http(s) URL. Set it in Streamlit Community Cloud Secrets.")
     st.stop()
-REQUEST_TIMEOUT = float(get_setting("REQUEST_TIMEOUT_SECONDS", 10))
-HEALTH_TIMEOUT = 3.0
+REQUEST_TIMEOUT = max(10.0, float(get_setting("REQUEST_TIMEOUT_SECONDS", 60)))
+# Render free services may need time to wake from an idle/cold start.
+HEALTH_TIMEOUT = max(60.0, float(get_setting("HEALTH_TIMEOUT_SECONDS", 60)))
 HISTORICAL_CSV_PATH = str(get_setting("HISTORICAL_CSV_PATH", str(Path(__file__).resolve().parents[1] / "data/raw/kolkata_traffic_weather.csv")))
 # If the backend cannot take a location yet, set SEND_LOCATION_TO_BACKEND=false to send
 # no location (GET without params / POST with {}) so the backend uses its default Kolkata location.
@@ -303,7 +304,7 @@ if health["ok"]:
 else:
     health_error = health["error"]
     if health_error["kind"] in ("connection", "timeout"):
-        health_slot.error("❌ Backend not reachable")
+        health_slot.error("❌ Backend not reachable — Render may be sleeping or deploying. Check the Render service logs and retry Refresh.")
     else:
         health_slot.warning(f"⚠️ Health check failed ({health_error['message']})")
 
