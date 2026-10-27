@@ -14,5 +14,8 @@ def get_traffic_data(latitude: float | None = None, longitude: float | None = No
         params={"point": f"{lat},{lon}", "unit": "KMPH", "key": settings.tomtom_api_key},
         timeout=settings.request_timeout,
     )
-    response.raise_for_status()
+    if response.status_code in (401, 403):
+        raise RuntimeError(f"TomTom authentication/access denied (HTTP {response.status_code}). Check API key and Traffic API access.")
+    if not response.ok:
+        raise RuntimeError(f"TomTom request failed (HTTP {response.status_code}).")
     return response.json()
