@@ -140,6 +140,6 @@ def train(data_path, model_path):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--data", default="data/processed/kolkata_traffic_weather_clean.csv")
-    parser.add_argument("--model", default="backend/ml/artifacts/congestion_model.joblib")
+    parser.add_argument("--model", default="ml/artifacts/congestion_model.joblib")
     args = parser.parse_args()
     train(args.data, args.model)

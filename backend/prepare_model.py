@@ -4,15 +4,15 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 BACKEND_ROOT = Path(__file__).resolve().parent
-if str(BACKEND_ROOT) not in sys.path:
-    sys.path.insert(0, str(BACKEND_ROOT))
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 from ml.clean_data import clean_csv
 from ml.train_model import train, prepare_data
 
 RAW = ROOT / "data/raw/kolkata_traffic_weather.csv"
 CLEAN = ROOT / "data/processed/kolkata_traffic_weather_clean.csv"
-MODEL = BACKEND_ROOT / "ml/artifacts/congestion_model.joblib"
+MODEL = ROOT / "ml/artifacts/congestion_model.joblib"
 
 
 def main():

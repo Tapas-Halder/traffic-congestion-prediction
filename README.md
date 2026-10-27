@@ -7,13 +7,10 @@ A five-member student project using real TomTom traffic and OpenWeather data, a 
 ```text
 traffic-congestion-prediction/
 ├── frontend/              # Streamlit dashboard and requirements
-├── backend/               # FastAPI, API collector, ML, tests and requirements
-│   ├── app/
-│   ├── ml/
-│   ├── tests/
-│   ├── prepare_model.py
-│   └── requirements.txt
+├── backend/               # FastAPI, API collector, model preparation
+├── ml/                    # Python Random Forest, cleaning, training, tests
 ├── data/                  # Real Kolkata historical CSV
+├── other-files/           # Integration tests, supplementary documentation
 └── README.md
 ```
 
@@ -22,8 +19,8 @@ Original files and the former GitHub Actions workflows remain safe in the [Backu
 ## How it works
 
 1. `backend/data_collector.py` collects TomTom traffic and OpenWeather observations at Kolkata checkpoints, saved in `data/raw/kolkata_traffic_weather.csv`.
-2. `backend/ml/clean_data.py` cleans the real observations. `backend/ml/train_model.py` trains a Random Forest using 15-minute-ahead labels.
-3. `backend/ml/random_forest_model.py` loads the trained model for FastAPI predictions.
+2. `ml/clean_data.py` cleans the real observations. `ml/train_model.py` trains a Random Forest using 15-minute-ahead labels.
+3. `ml/random_forest_model.py` loads the trained model for FastAPI predictions.
 4. `backend/app/main.py` provides health, current readings, model status and prediction APIs. `backend/app/routes.py` provides routing with TomTom and a limited OSRM fallback.
 5. `frontend/app.py` shows the traffic, weather, map, routing and model results through FastAPI.
 
@@ -51,8 +48,8 @@ Frontend defaults to `http://127.0.0.1:8000`. Set `BACKEND_URL` to the deployed 
 ## Offline tests and ML evaluation
 
 ```bash
-python backend/ml/test_model.py
-python backend/tests/test_integration.py
+python ml/test_model.py
+python other-files/tests/test_integration.py
 python backend/prepare_model.py
 ```
 
@@ -98,7 +95,7 @@ This project is developed by a five-member team:
 
 ## Submission checklist
 
-- [x] Only `frontend/`, `backend/`, `data/`, and `README.md` at the root.
+- [x] Five folders (`frontend/`, `backend/`, `ml/`, `data/`, `other-files/`) and `README.md` at the root.
 - [x] Real dataset, ML source, backend, frontend and Backup preserved.
 - [ ] Run offline tests and train the model on submitted data.
 - [ ] Update Render build command, redeploy and check model status.

@@ -1,6 +1,6 @@
 # Backend, data collection and machine learning
 
-All FastAPI, API collection and ML code lives here. No physical sensors.
+FastAPI, API collection, and the model-preparation helper live here; ML code is in the root `ml/` folder. No physical sensors.
 
 ## Local setup (run from repository root)
 
@@ -15,13 +15,13 @@ Set `TOMTOM_API_KEY` and `OPENWEATHER_API_KEY` as environment variables. See `ba
 ## ML and offline tests
 
 ```bash
-python backend/ml/clean_data.py
-python backend/ml/train_model.py
-python backend/ml/test_model.py
-python backend/tests/test_integration.py
+python ml/clean_data.py
+python ml/train_model.py
+python ml/test_model.py
+python other-files/tests/test_integration.py
 ```
 
-The historical dataset is `data/raw/kolkata_traffic_weather.csv`. The trained model artifact is generated under `backend/ml/artifacts/`. `backend/prepare_model.py` automates cleaning and training.
+The historical dataset is `data/raw/kolkata_traffic_weather.csv`. The trained model artifact is generated under `ml/artifacts/`. `backend/prepare_model.py` automates cleaning and training.
 
 ## API endpoints
 
