@@ -14,5 +14,8 @@ def get_weather_data(latitude: float | None = None, longitude: float | None = No
         params={"lat": lat, "lon": lon, "appid": settings.openweather_api_key, "units": "metric"},
         timeout=settings.request_timeout,
     )
-    response.raise_for_status()
+    if response.status_code in (401, 403):
+        raise RuntimeError(f"OpenWeather authentication/access denied (HTTP {response.status_code}).")
+    if not response.ok:
+        raise RuntimeError(f"OpenWeather request failed (HTTP {response.status_code}).")
     return response.json()
