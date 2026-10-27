@@ -1,89 +1,47 @@
-# Phase 4 — API Data Collection
+# FastAPI backend and API collection
 
-Collects real-life Kolkata traffic and weather data using external APIs.
+The backend serves Kolkata traffic and weather data from **TomTom Traffic API** and **OpenWeather API**, and provides 15-minute-ahead congestion predictions using the project's Python Random Forest model. No physical sensors are used.
 
-## APIs
-- TomTom Traffic Flow API — traffic speed/flow information.
-- OpenWeather Current Weather API — current weather information.
+## Run locally
 
-No physical traffic sensors are required for this simple version.
+From the repository root (Python 3.11 recommended):
 
-## Setup
+```bash
+python -m pip install -r backend/requirements.txt
+python scripts/prepare_model.py
+uvicorn app.main:app --app-dir backend --reload
+```
 
-From the repository root:
+Set `TOMTOM_API_KEY` and `OPENWEATHER_API_KEY` in the environment or a local `.env` file; see [example](../.env.example). **Never commit credentials.**
 
-    cd backend
-    python -m venv .venv
-    pip install -r requirements.txt
+Open `http://127.0.0.1:8000/docs` for the interactive endpoint schema.
 
-Copy the root .env.example to .env and add your API keys locally. Never commit .env.
+## Main endpoints
 
-Example .env values:
+- `GET /health` — service health and configuration indicators; does not guarantee working upstream APIs or a trained model.
+- `GET /api/v1/model/status` — trained-model readiness.
+- `GET /api/v1/data/current?latitude=22.5726&longitude=88.3639` — current TomTom traffic and OpenWeather readings.
+- `POST /api/v1/predict` with JSON `{"latitude":22.5726,"longitude":88.3639}` — 15-minute-ahead congestion prediction, when the model is available.
+- `GET /api/v1/route?from_lat=22.585&from_lon=88.346&to_lat=22.58&to_lon=88.41` — route geometry and sampled traffic conditions; see the main README for TomTom/OSRM limitations.
 
-    TOMTOM_API_KEY=your_key_here
-    OPENWEATHER_API_KEY=your_key_here
-    CITY=Kolkata
-    LATITUDE=22.5726
-    LONGITUDE=88.3639
-    REQUEST_TIMEOUT=10
+## Data collection
 
-## Run
+`backend/data_collector.py` collects traffic at 12 monitored Kolkata road checkpoints and current weather, appending to `data/raw/kolkata_traffic_weather.csv`. The GitHub Actions workflow `.github/workflows/collect-kolkata-data.yml` accepts manual and external dispatches, **but its collection job is intentionally paused** after more than 10,000 rows were collected. It will not collect more data until explicitly re-enabled.
 
-    uvicorn app.main:app --reload
+## Model and deployment
 
-Then open http://127.0.0.1:8000/docs.
+`scripts/prepare_model.py` cleans the historical CSV and trains `ml/artifacts/congestion_model.joblib` if enough valid 15-minute observation pairs and class diversity exist. The artifact is generated at build/runtime and is not committed.
 
-## Endpoints
-- GET /health
-- GET /api/v1/data/current
-- GET /api/v1/data/current?latitude=22.5726&longitude=88.3639
+Render backend build command:
 
-## Phase 4 data flow
+```bash
+pip install -r backend/requirements.txt && python scripts/prepare_model.py
+```
 
-TomTom + OpenWeather
--> multiple Kolkata road checkpoints
--> CSV append
--> GitHub Actions commit
+Render start command:
 
-TomTom is queried separately for each monitored checkpoint. A single latitude/longitude does not represent the whole city.
+```bash
+uvicorn app.main:app --app-dir backend --host 0.0.0.0 --port $PORT
+```
 
-### Automatic collection
-
-GitHub Actions runs the collector approximately every 15 minutes using:
-`7,22,37,52 * * * *` UTC.
-
-Each successful run:
-- fetches Kolkata weather once;
-- fetches traffic for every configured checkpoint;
-- appends multiple rows to `data/raw/kolkata_traffic_weather.csv`;
-- updates `data/status/last_successful_collection_utc.txt`;
-- commits the changes to `main`.
-
-Current checkpoints include Howrah Bridge, Esplanade, Park Circus, Science City, Chingrighata, Sector V, Shyambazar, Ultadanga, Airport/Jessore Road, Ruby/EM Bypass, Garia/EM Bypass and Park Street.
-
-If scheduled runs do not appear in GitHub Actions, first run the workflow manually. If manual execution succeeds but scheduled executions never appear, check that Actions is enabled and that the workflow exists on the repository default branch.
-
-## Phase 5 - Backend prediction API
-
-The backend now exposes:
-- GET /health - backend and API-key configuration status.
-- GET /api/v1/data/current - live TomTom + OpenWeather payload.
-- POST /api/v1/predict - collects live data, builds ML features, and runs MODEL_PATH.
-
-### ML model contract
-
-The trained model is loaded with joblib and receives these features in this exact order:
-current_speed, free_flow_speed, speed_ratio, traffic_confidence, temperature, humidity, rain_1h, hour, day_of_week.
-
-Set MODEL_PATH to the ML team's .joblib model file after training. Until the model exists, /api/v1/predict returns HTTP 503 rather than inventing a prediction.
-
-### Local test
-
-    cd backend
-    python -m venv .venv
-    # Windows: .venv\Scripts\activate
-    # Linux/macOS: source .venv/bin/activate
-    pip install -r requirements.txt
-    uvicorn app.main:app --reload
-
-Open http://127.0.0.1:8000/docs and test the endpoints from Swagger UI.
+For deployment details, see [main README](../README.md) and [deployment guide](../STREAMLIT_CLOUD_DEPLOYMENT.md).
