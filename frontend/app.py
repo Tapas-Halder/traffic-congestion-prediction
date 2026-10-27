@@ -87,8 +87,8 @@ BACKEND_URL = str(get_setting("BACKEND_URL", "")).strip().rstrip("/")
 if BACKEND_URL != "local" and not BACKEND_URL.startswith(("http://", "https://")):
     st.error("BACKEND_URL must be a complete http(s) URL. Set it in Streamlit Community Cloud Secrets.")
     st.stop()
-REQUEST_TIMEOUT = float(get_setting("REQUEST_TIMEOUT_SECONDS", 10))
-HEALTH_TIMEOUT = 3.0
+REQUEST_TIMEOUT = max(10.0, float(get_setting("REQUEST_TIMEOUT_SECONDS", 60)))
+HEALTH_TIMEOUT = max(60.0, float(get_setting("HEALTH_TIMEOUT_SECONDS", 60)))
 HISTORICAL_CSV_PATH = str(get_setting("HISTORICAL_CSV_PATH", str(Path(__file__).resolve().parents[1] / "data/raw/kolkata_traffic_weather.csv")))
 # If the backend cannot take a location yet, set SEND_LOCATION_TO_BACKEND=false to send
 # no location (GET without params / POST with {}) so the backend uses its default Kolkata location.
