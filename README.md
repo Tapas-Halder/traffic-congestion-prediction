@@ -73,6 +73,18 @@ streamlit run frontend/app.py
 
 Offline tests: `python ml/test_model.py` and `python tests/test_integration.py`. Keep ML implementation in Python `.py` files. Generated `.joblib` artifacts are ignored by Git; Render prepares them from historical CSV.
 
+## Team Members and Roles
+
+This project is developed by a five-member team:
+
+| Team member | Role | Responsibilities |
+| --- | --- | --- |
+| **Tapas Halder** | **Team Leader, Backend Developer & API Data Collection and Integration** | Team coordination, FastAPI backend development, TomTom Traffic API and OpenWeather API data collection, API integration, GitHub repository management, system integration and deployment. |
+| **Soumyadeep Mandal** | **Frontend Developer** | Streamlit frontend development, dashboard user interface, traffic visualization and frontend-to-backend connectivity. |
+| **Sumit Kumar Mandal** | **Machine Learning Developer — Part 1** | Traffic dataset preprocessing and cleaning; Random Forest model development. |
+| **Subhajit Podder** | **Machine Learning Developer — Part 2** | Machine learning model training and evaluation; traffic congestion prediction implementation. |
+| **Pammi Biswas** | **Documentation** | Project documentation. |
+
 ## Team collaboration
 
 The team leader maintains `main`. Members work in their own branches, open pull requests, and merge after review. Never commit API keys or Streamlit Secrets.
