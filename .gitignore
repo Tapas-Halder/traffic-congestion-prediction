@@ -22,3 +22,15 @@ Thumbs.db
 # ML generated files
 *.pkl
 *.joblib
+
+# Streamlit local secrets (never commit credentials)
+.streamlit/secrets.toml
+**/.streamlit/secrets.toml
+
+# Generated datasets, caches, and test artifacts
+.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+data/processed/
+ml/artifacts/
