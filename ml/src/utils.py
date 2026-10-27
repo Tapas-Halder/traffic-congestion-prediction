@@ -1,0 +1,7 @@
+"""Small utilities for ML output paths."""
+from pathlib import Path
+
+def ensure_directory(path):
+    path = Path(path)
+    path.mkdir(parents=True, exist_ok=True)
+    return path

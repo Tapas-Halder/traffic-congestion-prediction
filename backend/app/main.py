@@ -42,10 +42,9 @@ def current_data(
 ) -> dict:
     try:
         return collect_current_data(latitude, longitude)
-    except RuntimeError as exc:
-        raise HTTPException(status_code=500, detail=str(exc)) from exc
     except Exception as exc:
-        raise HTTPException(status_code=502, detail=f"External API request failed: {exc}") from exc
+        logger.exception("Unexpected current-data collection error")
+        raise HTTPException(status_code=503, detail="Current data temporarily unavailable; check backend logs.") from exc
 
 
 @app.post("/api/v1/predict")
@@ -55,6 +54,8 @@ def prediction(request: PredictionRequest) -> dict:
     try:
         payload = collect_current_data(request.latitude, request.longitude)
         stage = "prepare_features"
+        if payload.get("source_errors"):
+            raise RuntimeError("Live inputs unavailable: " + "; ".join(payload["source_errors"].values()))
         features = build_prediction_features(payload)
         stage = "model_inference"
         result = predict(features)

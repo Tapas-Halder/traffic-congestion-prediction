@@ -8,7 +8,7 @@ A five-member student project using real TomTom traffic and OpenWeather data, a 
 traffic-congestion-prediction/
 ├── frontend/              # Streamlit dashboard and requirements
 ├── backend/               # FastAPI, API collector, model preparation
-├── ml/                    # Python Random Forest, cleaning, training, tests
+├── ml/                    # ML entry point, src/, Random Forest, analysis and outputs
 ├── data/                  # Real Kolkata historical CSV
 ├── other-files/           # Integration tests, supplementary documentation
 └── README.md
@@ -45,6 +45,10 @@ streamlit run frontend/app.py
 
 Frontend defaults to `http://127.0.0.1:8000`. Set `BACKEND_URL` to the deployed HTTPS backend in Streamlit Secrets.
 
+## ML folder structure and usage
+
+The [ML README](ml/README.md) explains `ml/main.py`, `ml/config.py`, `ml/data/`, `ml/src/`, `ml/requirements.txt` and `ml/outputs/`. The actual dataset remains under root `data/raw/` to avoid duplicate CSV files. Run `python -m ml.main all` from the repository root to clean and train.
+
 ## Offline tests and ML evaluation
 
 ```bash
@@ -79,7 +83,7 @@ REQUEST_TIMEOUT_SECONDS = 60
 HEALTH_TIMEOUT_SECONDS = 60
 ```
 
-The old GitHub Actions CI and collector workflows are only on `Backup`. Historical CSV is retained; no automated collection runs from this simplified `main`.
+**TomTom 403:** The frontend can now display available OpenWeather data even when TomTom rejects traffic requests. A 403 cannot be fixed by changing the timeout: rotate any exposed TomTom key and check Traffic Flow permissions/quota. API credentials are never included in returned error URLs. The old GitHub Actions CI and collector workflows are only on `Backup`. Historical CSV is retained; no automated collection runs from this simplified `main`.
 
 ## Team Members and Roles
 

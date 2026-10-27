@@ -1,4 +1,6 @@
 artifacts/
+outputs/*
+!outputs/.gitkeep
 __pycache__/
 *.joblib
 *.pkl
