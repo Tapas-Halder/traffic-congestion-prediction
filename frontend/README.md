@@ -29,12 +29,13 @@ Open `http://localhost:8501`.
 ## Configuration
 
 Each setting is read from an **environment variable**, then **Streamlit secrets**
-(`.streamlit/secrets.toml`, see `secrets.toml.example`), then a default.
+(`.streamlit/secrets.toml`), then a default.
 
 | Setting | Default | Purpose |
 |---|---|---|
 | `BACKEND_URL` | `http://127.0.0.1:8000` | Backend base URL. **Set to the deployed URL in production.** |
-| `REQUEST_TIMEOUT_SECONDS` | `10` | Timeout for each backend call. |
+| `REQUEST_TIMEOUT_SECONDS` | `60` | Timeout for each live data / prediction call (seconds); allows cold starts and slow upstream APIs. |
+| `HEALTH_TIMEOUT_SECONDS` | `60` | Backend health timeout (seconds), useful for Render free-tier cold starts. |
 | `HISTORICAL_CSV_PATH` | `data/historical_traffic.csv` | CSV used for the speed-trend chart. |
 | `SEND_LOCATION_TO_BACKEND` | `true` | `false` = send no location, so the backend uses its default Kolkata location. |
 
@@ -130,3 +131,11 @@ git push -u origin feature/kolkata-frontend
 
 Open a Pull Request, describe the changes, how you tested, and the incomplete items above, then wait for
 the team leader's review. Do not merge to `main` yourself.
+
+## Render free-tier timeout troubleshooting
+
+If the dashboard says **backend did not respond within 3 seconds**, you are using an older frontend deployment. The new frontend uses at least **60 seconds** for the health check. In Streamlit Community Cloud, set `BACKEND_URL = "https://kolkata-traffic-api.onrender.com"`, `REQUEST_TIMEOUT_SECONDS = 60`, and `HEALTH_TIMEOUT_SECONDS = 60`; reboot the app after the GitHub commit is deployed.
+
+Check `https://kolkata-traffic-api.onrender.com/health` first. A slow first request can be normal on a sleeping free Render instance. If it never responds, inspect Render **Logs**, the service's deployed branch, its **build command** (`pip install -r backend/requirements.txt && python backend/prepare_model.py`) and **start command** (`uvicorn app.main:app --app-dir backend --host 0.0.0.0 --port $PORT`). Check `/api/v1/model/status` and `/api/v1/data/current` separately. A successful health check does not prove that TomTom/OpenWeather keys or the ML model work.
+
+GitHub Actions CI and collection workflows were removed from `main` to preserve the five-folder root layout. They are available in the `Backup` branch; the collector is intentionally paused. Offline tests: `python ml/test_model.py` and `python other-files/tests/test_integration.py`.
