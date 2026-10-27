@@ -2,6 +2,12 @@
 
 A working student project using real TomTom traffic and OpenWeather observations, a Python Random Forest classifier for 15-minute-ahead congestion, FastAPI on Render, and a Streamlit dashboard on Streamlit Community Cloud. No physical sensors or fabricated live observations.
 
+## Submission guide
+
+This repository is the five-member team's Kolkata project submission. **Start here:** read the architecture below, check the [documentation index](docs/README.md), and follow the [integration runbook](INTEGRATION.md) to run and test the complete system. The real historical dataset is committed at `data/raw/kolkata_traffic_weather.csv` and must be kept. The original repository state before submission cleanup is preserved in the [Backup branch](https://github.com/Tapas-Halder/traffic-congestion-prediction/tree/Backup).
+
+The data collection workflow is **paused intentionally** after 10,000+ observations. Existing historical data supports model training; live dashboard requests still depend on available external API credentials and service availability.
+
 ## Architecture
 
 1. **Scheduled collection:** External scheduler triggers GitHub Actions event `collect-kolkata-data` (or use manual workflow dispatch). `backend/data_collector.py` queries TomTom for 12 Kolkata road checkpoints and OpenWeather for Kolkata weather, appending rows to `data/raw/kolkata_traffic_weather.csv`.
@@ -51,7 +57,7 @@ Workflow: `.github/workflows/collect-kolkata-data.yml`
 
 - GitHub repository **Settings → Secrets and variables → Actions**: configure `TOMTOM_API_KEY` and `OPENWEATHER_API_KEY`.
 - External scheduler: dispatch the event `collect-kolkata-data`; check scheduler credentials and schedule separately.
-- GitHub → Actions → **Collect Kolkata traffic and weather data** → **Run workflow** to test manually.
+- GitHub → Actions → **Collect Kolkata traffic and weather data** → **Run workflow** will currently skip the collection job because it is intentionally paused. Re-enable the job only if new collection is required.
 - Successful runs append new observations to `data/raw/kolkata_traffic_weather.csv` and commit **only this CSV** to `main`. Partial checkpoint failures are logged.
 - Verify the latest CSV timestamps and workflow history. A successful deploy does not prove the external scheduler continues to fire.
 
@@ -88,6 +94,16 @@ This project is developed by a five-member team:
 ## Team collaboration
 
 The team leader maintains `main`. Members work in their own branches, open pull requests, and merge after review. Never commit API keys or Streamlit Secrets.
+
+## Submission checklist
+
+- [x] Source code for frontend, backend, ML and integration is organized in separate folders.
+- [x] Real Kolkata traffic/weather CSV retained in `data/raw/`.
+- [x] Five team members and their assigned roles documented.
+- [x] Original pre-cleanup snapshot preserved on `Backup` branch.
+- [ ] Run offline tests and confirm ML training on the submitted dataset.
+- [ ] Verify live API credentials, model status, prediction and frontend-to-backend connectivity.
+- [ ] Capture final screenshots and evaluation results for the project report.
 
 ## Notes
 
