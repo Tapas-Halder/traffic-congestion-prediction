@@ -102,3 +102,17 @@ def model_status() -> dict:
     except Exception as exc:
         logger.exception("Saved model failed to load")
         return {"ready": False, "reason": str(exc)}
+
+
+# Historical offline prediction: no external API requests
+from app.services.offline import predict_offline
+
+
+@app.get("/api/v1/predict/offline")
+def offline_prediction(location_id: str | None = None):
+    try:
+        return predict_offline(location_id=location_id)
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
