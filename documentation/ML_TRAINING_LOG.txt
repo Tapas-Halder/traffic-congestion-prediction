@@ -1,0 +1,20 @@
+Training rows: 11638 Testing rows: 2916
+Prediction horizon: 15 +/- 5 minutes
+Accuracy: 0.602
+Macro F1: 0.548
+Majority baseline: 0.798
+Confusion matrix (rows=true, columns=predicted): ['Low', 'Moderate', 'Heavy']
+[[1308  969   49]
+ [  65  376   60]
+ [   2   15   72]]
+              precision    recall  f1-score   support
+
+         Low       0.95      0.56      0.71      2326
+    Moderate       0.28      0.75      0.40       501
+       Heavy       0.40      0.81      0.53        89
+
+    accuracy                           0.60      2916
+   macro avg       0.54      0.71      0.55      2916
+weighted avg       0.82      0.60      0.65      2916
+
+Model saved: ml/artifacts/congestion_model.joblib
