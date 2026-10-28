@@ -256,6 +256,42 @@ def get_prediction(loc):
     return _safe(_cached_predict, BACKEND_URL, tuple(sorted(payload.items())))
 
 
+@st.cache_data(ttl=60, show_spinner=False)
+def _cached_offline_predict(base_url):
+    path = "/api/v1/predict/offline"
+    result = call_backend(
+        base_url,
+        "GET",
+        path,
+        timeout=REQUEST_TIMEOUT,
+    )
+
+    if not result["ok"]:
+        raise BackendError(result["error"])
+
+    if not isinstance(result["data"], dict):
+        raise BackendError(
+            make_error("schema", "backend", "Offline prediction response is not a JSON object.")
+        )
+
+    parsed = parse_prediction(result["data"])
+
+    if prediction_label(parsed["prediction"]) is None:
+        raise BackendError(
+            make_error("model", "ml_model", "Offline prediction is unavailable.")
+        )
+
+    return {
+        "ok": True,
+        "parsed": parsed,
+        "raw": result["data"],
+        "fetched_at": result["fetched_at"],
+    }
+
+
+def get_offline_prediction():
+    return _safe(_cached_offline_predict, BACKEND_URL)
+
 def load_all_current():
     """Fetch current data for every location; stop early if the backend itself is unreachable."""
     results, blocked = {}, None
@@ -280,6 +316,19 @@ with st.sidebar:
 
     selected_name = st.selectbox("📍 Location", KNOWN_PLACES, index=0)
     selected = next(loc for loc in KOLKATA_LOCATIONS if loc["name"] == selected_name)
+    st.divider()
+    prediction_mode = st.radio(
+        "Prediction Mode",
+        ["Offline", "Live"],
+        index=0,
+        horizontal=True,
+        help="Offline uses historical CSV. Live uses TomTom and OpenWeather APIs.",
+    )
+
+    if prediction_mode == "Offline":
+        st.info("Historical prediction — no live traffic or weather API requests.")
+    else:
+        st.warning("Live mode uses external APIs and may fail when the TomTom quota is exhausted.")
 
     # Task Twelve: refresh button that triggers real API requests again.
     if st.button("🔄 Refresh data", use_container_width=True):
@@ -313,13 +362,35 @@ blocked = None
 if not health["ok"] and health["error"]["kind"] in ("connection", "timeout"):
     blocked = health
 
-with st.spinner("Fetching live data from the backend…"):
-    if blocked:
-        current_results = {loc["name"]: blocked for loc in KOLKATA_LOCATIONS}
-        prediction_result = blocked
-    else:
-        current_results = load_all_current()
-        prediction_result = get_prediction(selected)
+if prediction_mode == "Offline":
+    with st.spinner("Loading historical ML prediction…"):
+        prediction_result = blocked if blocked else get_offline_prediction()
+
+    offline_notice = {
+        "ok": False,
+        "error": make_error(
+            "unavailable",
+            "backend",
+            "Live traffic and weather are disabled in Offline Mode.",
+        ),
+    }
+
+    current_results = {
+        loc["name"]: offline_notice
+        for loc in KOLKATA_LOCATIONS
+    }
+
+else:
+    with st.spinner("Fetching live data from the backend…"):
+        if blocked:
+            current_results = {
+                loc["name"]: blocked
+                for loc in KOLKATA_LOCATIONS
+            }
+            prediction_result = blocked
+        else:
+            current_results = load_all_current()
+            prediction_result = get_prediction(selected)
 
 fetched_now = datetime.now(IST).strftime("%d %b %Y, %H:%M:%S IST")
 with st.sidebar:
@@ -341,7 +412,15 @@ pred_label = prediction_label(pred["prediction"]) if pred else None
 # HEADER + ERROR SUMMARY + KPI CARDS  (Task Six)
 # ══════════════════════════════════════════════════════════════════════════════
 st.title("🚦 TrafficIQ — Kolkata")
-st.caption(f"Live traffic and weather via the FastAPI backend · showing **{selected_name}**")
+if prediction_mode == "Offline":
+    st.caption(
+        "Historical Kolkata traffic prediction using CSV + ML. "
+        "Not live data and not necessarily for the selected map location."
+    )
+else:
+    st.caption(
+        f"Live traffic and weather via the FastAPI backend · showing **{selected_name}**"
+    )
 
 
 def show_error(title, error):
@@ -354,12 +433,22 @@ def show_error(title, error):
 
 # Show each distinct problem once instead of once per location.
 seen = set()
-for result in current_results.values():
-    if not result["ok"]:
-        key = (result["error"]["kind"], result["error"]["message"], result["error"].get("detail"))
-        if key not in seen:
-            seen.add(key)
-            show_error("Live traffic / weather data unavailable", result["error"])
+if prediction_mode == "Live":
+    for result in current_results.values():
+        if not result["ok"]:
+            key = (
+                result["error"]["kind"],
+                result["error"]["message"],
+                result["error"].get("detail"),
+            )
+            if key not in seen:
+                seen.add(key)
+                show_error("Live traffic / weather data unavailable", result["error"])
+else:
+    st.info(
+        "📁 Historical Offline Mode: Prediction uses saved Kolkata traffic "
+        "and weather data. Live traffic and weather readings are disabled."
+    )
 if not prediction_result["ok"]:
     error = prediction_result["error"]
     key = (error["kind"], error["message"], error.get("detail"))
