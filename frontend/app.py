@@ -12,6 +12,7 @@ from pathlib import Path
 import streamlit as st
 
 ROOT = Path(__file__).resolve().parent
+st.set_page_config(page_title="TrafficIQ — Kolkata", page_icon="🚦", layout="wide", initial_sidebar_state="expanded")
 with st.sidebar:
     st.markdown("## 🚦 TrafficIQ")
     feature = st.radio(
