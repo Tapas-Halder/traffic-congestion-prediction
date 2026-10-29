@@ -42,6 +42,14 @@ with st.expander("Required CSV format", expanded=False):
                        "traffic_csv_template.csv", mime="text/csv")
 
 file = st.file_uploader("Upload a CSV with historical Kolkata traffic observations", type=["csv"])
+if file is None and st.session_state.get("use_default_historical_csv", False):
+    historical = ROOT / "data/raw/kolkata_traffic_weather.csv"
+    if historical.is_file():
+        file = historical
+        st.info("Using saved real Kolkata historical CSV. Upload another CSV to override.")
+    else:
+        st.error("Saved historical CSV is missing.")
+        st.stop()
 if file is None:
     st.info("Upload a CSV to see predictions. The example CSV is only a format template, not real measured data.")
     st.stop()
@@ -49,7 +57,7 @@ if file is None:
 try:
     with st.spinner("Loading model and predicting..."):
         ensure_model()
-        predictions, rejected = predict_csv(io.BytesIO(file.getvalue()))
+        predictions, rejected = predict_csv(io.BytesIO(file.getvalue()) if hasattr(file, "getvalue") else file)
 except (ValueError, FileNotFoundError, RuntimeError, pd.errors.ParserError, pd.errors.EmptyDataError) as exc:
     st.error(f"Cannot predict: {exc}")
     st.stop()
@@ -82,6 +90,22 @@ if not rejected.empty:
                        "invalid_rows.csv", mime="text/csv")
 
 st.subheader("Kolkata road checkpoints")
+KOLKATA_LOCATIONS = {
+    "Esplanade": (22.5646, 88.3510),
+    "Park Street": (22.5535, 88.3520),
+    "Howrah Bridge": (22.5851, 88.3468),
+    "EM Bypass": (22.5395, 88.3960),
+    "Salt Lake": (22.5726, 88.4338),
+}
+with st.expander("Original Kolkata route locations"):
+    start = st.selectbox("Starting point", list(KOLKATA_LOCATIONS), index=0, key="csv_start")
+    destination = st.selectbox("Destination", list(KOLKATA_LOCATIONS), index=2, key="csv_end")
+    landmark_map = folium.Map(location=[22.5726, 88.3639], zoom_start=11)
+    for name, coordinates in KOLKATA_LOCATIONS.items():
+        folium.Marker(coordinates, tooltip=name).add_to(landmark_map)
+    st_folium(landmark_map, height=320, returned_objects=[], key="csv_landmarks")
+    st.caption("Offline: landmarks only, not calculated road routes or live ETAs. Use Original dashboard for FastAPI routing.")
+
 if {"latitude", "longitude"}.issubset(shown.columns):
     mapped = shown.dropna(subset=["latitude", "longitude"])
     mapped = mapped[mapped["latitude"].between(22.0, 23.0) &
