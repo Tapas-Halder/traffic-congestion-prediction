@@ -17,8 +17,9 @@ if str(ROOT) not in sys.path:
 from ml.csv_inference import REQUIRED, OPTIONAL, predict_csv
 from ml.random_forest_model import MODEL_PATH, load_model
 
-st.title("🚦 TrafficIQ — Kolkata")
-st.caption("Historical CSV → Random Forest → 15-minute-ahead congestion | No live APIs required")
+st.title("🚦 TrafficIQ — CSV Prediction")
+st.caption("Upload traffic observations from any city · Next 15 minutes after each observation")
+st.warning("The ML model was trained on Kolkata data. Predictions for other cities are experimental and not locally validated.")
 
 @st.cache_resource(show_spinner="Preparing trusted historical ML model...")
 def ensure_model():
@@ -35,12 +36,12 @@ with st.expander("Required CSV format", expanded=False):
         "timestamp_utc": "2026-10-18T10:00:00Z", "location_id": "H2S-01",
         "current_speed_kmph": 24, "free_flow_speed_kmph": 45,
         "confidence": 0.92, "temperature_c": 30.5, "humidity_pct": 78,
-        "rain_1h_mm": 0.0, "latitude": 22.5851, "longitude": 88.3468
+        "rain_1h_mm": 0.0, "latitude": 22.5851, "longitude": 88.3468, "time_zone": "Asia/Kolkata"
     }])
     st.download_button("Download example CSV (illustrative values)", example.to_csv(index=False),
                        "traffic_csv_template.csv", mime="text/csv")
 
-file = st.file_uploader("Upload a CSV with historical Kolkata traffic observations", type=["csv"])
+file = st.file_uploader("Upload city traffic CSV (Kolkata or worldwide)", type=["csv"])
 if file is None and st.session_state.get("use_default_historical_csv", False):
     historical = ROOT / "data/raw/kolkata_traffic_weather.csv"
     if historical.is_file():
@@ -80,15 +81,21 @@ c.metric("Prediction horizon", "15 minutes")
 roads = sorted(predictions["location_id"].astype(str).unique())
 selected = st.multiselect("Filter roads", roads, default=roads)
 shown = predictions[predictions["location_id"].isin(selected)].copy()
-st.subheader("Prediction results")
-st.dataframe(shown, use_container_width=True, hide_index=True)
+st.subheader("🚦 Next 15-minute traffic condition")
+latest_by_road = shown.sort_values("timestamp_utc").drop_duplicates("location_id", keep="last")
+if not latest_by_road.empty:
+    for _, item in latest_by_road.head(12).iterrows():
+        st.markdown(f"**{item['location_id']}** — **{item['predicted_congestion']}** · observation: {item['timestamp_utc']} · predicted for: {item['prediction_at_utc']}")
+st.caption("These are predictions 15 minutes after each CSV observation, not necessarily 15 minutes from the current clock time.")
+with st.expander("See all rows and technical details"):
+    st.dataframe(shown, use_container_width=True, hide_index=True)
 st.download_button("Download predictions CSV", predictions.to_csv(index=False),
-                   "kolkata_15min_predictions.csv", mime="text/csv")
+                   "traffic_15min_predictions.csv", mime="text/csv")
 if not rejected.empty:
     st.download_button("Download invalid row report", rejected.to_csv(index=False),
                        "invalid_rows.csv", mime="text/csv")
 
-st.subheader("Kolkata road checkpoints")
+st.subheader("🗺️ Map of uploaded traffic locations")
 KOLKATA_LOCATIONS = {
     "Esplanade": (22.5646, 88.3510),
     "Park Street": (22.5535, 88.3520),
@@ -107,12 +114,12 @@ with st.expander("Original Kolkata route locations"):
 
 if {"latitude", "longitude"}.issubset(shown.columns):
     mapped = shown.dropna(subset=["latitude", "longitude"])
-    mapped = mapped[mapped["latitude"].between(22.0, 23.0) &
-                    mapped["longitude"].between(87.5, 89.0)]
+    mapped = mapped[mapped["latitude"].between(-90, 90) &
+                    mapped["longitude"].between(-180, 180)]
     if not mapped.empty:
         # Show the latest uploaded observation per road, not a continuous predicted route.
         latest = mapped.sort_values("timestamp_utc").drop_duplicates("location_id", keep="last")
-        m = folium.Map(location=[22.5726, 88.3639], zoom_start=11, tiles="OpenStreetMap")
+        m = folium.Map(location=[float(latest["latitude"].mean()), float(latest["longitude"].mean())], zoom_start=10, tiles="OpenStreetMap")
         colors = {"Low": "green", "Moderate": "orange", "Heavy": "red"}
         for _, row in latest.iterrows():
             label = str(row["predicted_congestion"])
@@ -122,13 +129,15 @@ if {"latitude", "longitude"}.issubset(shown.columns):
                 fill_opacity=0.8,
                 tooltip=f"{row['location_id']}: {label} at {row['prediction_at_utc']}",
             ).add_to(m)
+        if len(latest) > 1:
+            m.fit_bounds(latest[["latitude", "longitude"]].values.tolist())
         st_folium(m, width=None, height=430, returned_objects=[])
         st.caption("Colored points are predicted checkpoint conditions, not road-wide route forecasts.")
     else:
-        st.info("No usable Kolkata coordinates in selected rows.")
+        st.info("No usable coordinates in selected rows.")
 else:
     st.info("Add latitude and longitude columns to display checkpoints on the map.")
 
 st.divider()
-st.caption("Offline historical prediction • TomTom/OpenWeather are not called • "
+st.caption("CSV prediction • No TomTom/OpenWeather API calls • "
            "Model probability is not a calibrated reliability guarantee.")
