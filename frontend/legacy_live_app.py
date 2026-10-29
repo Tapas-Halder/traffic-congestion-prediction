@@ -46,13 +46,6 @@ from traffic_core import (
     speed_ratio,
 )
 
-st.set_page_config(
-    page_title="TrafficIQ — Kolkata",
-    page_icon="🚦",
-    layout="wide",
-    initial_sidebar_state="expanded",
-)
-
 # A hosted FastAPI server already owns ML inference and model training.
 # Do not import joblib/scikit-learn or train on Streamlit when using Render.
 try:
