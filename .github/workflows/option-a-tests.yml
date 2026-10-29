@@ -1,0 +1,51 @@
+name: Option A CSV Offline Tests
+on:
+  push:
+    branches:
+      - feature/option-a-csv-offline
+    paths:
+      - "frontend/**"
+      - "ml/**"
+      - "other-files/tests/test_csv_inference.py"
+      - ".github/workflows/option-a-tests.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  offline-csv:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install offline frontend and ML dependencies
+        run: python -m pip install -r frontend/requirements.txt
+      - name: Check Python syntax
+        run: python -m compileall -q frontend ml backend/prepare_model.py other-files/tests/test_csv_inference.py
+      - name: Run CSV validation tests
+        run: python -m unittest discover -s other-files/tests -p "test_csv_inference.py" -v
+      - name: Prepare model from real historical data
+        run: python backend/prepare_model.py
+      - name: Verify saved model and predict a real CSV row
+        run: |
+          python - <<'PY'
+          import io
+          from pathlib import Path
+          import pandas as pd
+          from ml.csv_inference import predict_csv
+          from ml.random_forest_model import load_model
+          model = load_model()
+          assert model["horizon_minutes"] == 15
+          df = pd.read_csv("data/raw/kolkata_traffic_weather.csv")
+          required = ["timestamp_utc","location_id","current_speed_kmph","free_flow_speed_kmph","confidence","temperature_c","humidity_pct","rain_1h_mm"]
+          sample = df[required + [c for c in ("latitude","longitude") if c in df]].copy()
+          sample = sample[(pd.to_numeric(sample["current_speed_kmph"], errors="coerce") >= 0) & (pd.to_numeric(sample["free_flow_speed_kmph"], errors="coerce") > 0)].head(5)
+          assert len(sample) > 0, "No valid traffic rows"
+          predictions, rejected = predict_csv(io.StringIO(sample.to_csv(index=False)))
+          assert len(predictions) > 0, "No predictions"
+          assert predictions["predicted_congestion"].isin(["Low","Moderate","Heavy"]).all()
+          print(predictions[["location_id","predicted_congestion"]].to_string(index=False))
+          print("PASS: CSV offline inference on historical rows")
+          PY
