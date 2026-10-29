@@ -1,0 +1,38 @@
+name: Simple UI checks
+on:
+  push:
+    branches: [feature/simple-ui-results]
+  pull_request:
+    paths:
+      - "frontend/**"
+      - ".github/workflows/simple-ui-tests.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install requirements
+        run: python -m pip install -r frontend/requirements.txt
+      - name: Python syntax check
+        run: python -m compileall -q frontend ml backend
+      - name: CSV inference unit tests
+        run: python -m unittest discover -s other-files/tests -p "test_csv_inference.py" -v
+      - name: Validate navigation and original dashboard retained
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          app = Path("frontend/app.py").read_text(encoding="utf-8")
+          csv = Path("frontend/csv_app.py").read_text(encoding="utf-8")
+          original = Path("frontend/legacy_live_app.py").read_text(encoding="utf-8")
+          assert "Kolkata Dashboard" in app and "CSV Prediction" in app
+          assert "runpy.run_path" in app and "legacy_live_app.py" in app
+          assert "file_uploader" in csv and "predicted_congestion" in csv
+          assert all(x in original for x in ["Overview", "Roads", "Map", "Route", "Pipeline"])
+          print("PASS: original dashboard retained and simple CSV UI present")
+          PY
