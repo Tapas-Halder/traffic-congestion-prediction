@@ -17,7 +17,6 @@ if str(ROOT) not in sys.path:
 from ml.csv_inference import REQUIRED, OPTIONAL, predict_csv
 from ml.random_forest_model import MODEL_PATH, load_model
 
-st.set_page_config(page_title="TrafficIQ | Kolkata", page_icon="🚦", layout="wide")
 st.title("🚦 TrafficIQ — Kolkata")
 st.caption("Historical CSV → Random Forest → 15-minute-ahead congestion | No live APIs required")
 
