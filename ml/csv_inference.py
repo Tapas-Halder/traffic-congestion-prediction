@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from pathlib import Path
 import sys
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 import pandas as pd
 
@@ -21,7 +22,7 @@ REQUIRED = [
     "free_flow_speed_kmph", "confidence", "temperature_c",
     "humidity_pct", "rain_1h_mm",
 ]
-OPTIONAL = ["latitude", "longitude"]
+OPTIONAL = ["latitude", "longitude", "time_zone"]
 MAX_ROWS = 25000
 
 
@@ -40,7 +41,7 @@ def prepare_uploaded_csv(source) -> tuple[pd.DataFrame, pd.DataFrame]:
     df["source_row"] = range(2, len(df) + 2)
     df["timestamp_utc"] = pd.to_datetime(df["timestamp_utc"], utc=True, errors="coerce")
     df["location_id"] = df["location_id"].astype("string").str.strip()
-    for col in REQUIRED[2:] + [c for c in OPTIONAL if c in df]:
+    for col in REQUIRED[2:] + [c for c in ("latitude", "longitude") if c in df]:
         df[col] = pd.to_numeric(df[col], errors="coerce")
 
     reasons = pd.Series("", index=df.index, dtype="string")
@@ -64,7 +65,19 @@ def prepare_uploaded_csv(source) -> tuple[pd.DataFrame, pd.DataFrame]:
     if valid.empty:
         return valid, invalid
 
-    local = valid["timestamp_utc"].dt.tz_convert("Asia/Kolkata")
+    if "time_zone" in valid:
+        zones = valid["time_zone"].fillna("Asia/Kolkata").astype(str).str.strip().replace("", "Asia/Kolkata")
+        known = {}
+        for zone in zones.unique():
+            try:
+                known[zone] = ZoneInfo(zone)
+            except (ZoneInfoNotFoundError, ValueError, KeyError):
+                raise ValueError(f"Unknown time_zone: {zone}")
+        local_hours = pd.Series([stamp.tz_convert(known[zone]).hour for stamp, zone in zip(valid["timestamp_utc"], zones)], index=valid.index)
+        local_days = pd.Series([stamp.tz_convert(known[zone]).dayofweek for stamp, zone in zip(valid["timestamp_utc"], zones)], index=valid.index)
+    else:
+        local = valid["timestamp_utc"].dt.tz_convert("Asia/Kolkata")
+        local_hours, local_days = local.dt.hour, local.dt.dayofweek
     valid["current_speed"] = valid["current_speed_kmph"]
     valid["free_flow_speed"] = valid["free_flow_speed_kmph"]
     valid["speed_ratio"] = valid["current_speed"] / valid["free_flow_speed"]
@@ -72,8 +85,8 @@ def prepare_uploaded_csv(source) -> tuple[pd.DataFrame, pd.DataFrame]:
     valid["temperature"] = valid["temperature_c"]
     valid["humidity"] = valid["humidity_pct"]
     valid["rain_1h"] = valid["rain_1h_mm"]
-    valid["hour"] = local.dt.hour
-    valid["day_of_week"] = local.dt.dayofweek
+    valid["hour"] = local_hours
+    valid["day_of_week"] = local_days
     return valid, invalid
 
 

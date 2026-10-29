@@ -311,9 +311,9 @@ with st.sidebar:
     selected = next(loc for loc in KOLKATA_LOCATIONS if loc["name"] == selected_name)
     st.divider()
     prediction_mode = st.radio(
-        "Prediction Mode",
+        "Data source",
         ["Offline", "Live"],
-        index=0,
+        index=1,
         horizontal=True,
         help="Offline uses historical CSV. Live uses TomTom and OpenWeather APIs.",
     )
