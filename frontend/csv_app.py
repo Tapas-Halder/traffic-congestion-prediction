@@ -1,134 +1,87 @@
-"""TrafficIQ Option A: standalone CSV prediction, no API or Render required."""
+"""Worldwide CSV visualization and historical 15-minute ML prediction."""
 from __future__ import annotations
-
 import io
 import sys
 from pathlib import Path
-
-import folium
 import pandas as pd
+import folium
 import streamlit as st
 from streamlit_folium import st_folium
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
-
 from ml.csv_inference import REQUIRED, OPTIONAL, predict_csv
 from ml.random_forest_model import MODEL_PATH, load_model
 
-st.title("🚦 TrafficIQ — Kolkata")
-st.caption("Historical CSV → Random Forest → 15-minute-ahead congestion | No live APIs required")
-
-@st.cache_resource(show_spinner="Preparing trusted historical ML model...")
+@st.cache_resource(show_spinner="Preparing ML model...")
 def ensure_model():
     if not MODEL_PATH.is_file():
-        from backend.prepare_model import main as prepare_model
-        if not prepare_model():
-            raise RuntimeError("Model unavailable: training CSV or required columns missing.")
+        from backend.prepare_model import main
+        if not main():
+            raise RuntimeError("Could not prepare the ML model from the saved dataset.")
     return load_model()
 
-with st.expander("Required CSV format", expanded=False):
+local = st.session_state.get("trafficiq_local", False)
+if local:
+    st.title("🚦 TrafficIQ — Local PC")
+    st.caption("Offline historical prediction. Internet and FastAPI are not required.")
+with st.expander("CSV format and sample"):
     st.code(",".join(REQUIRED + OPTIONAL), language="text")
-    st.caption("latitude and longitude are optional, but needed for map markers. Timestamps must include UTC or timezone information.")
-    example = pd.DataFrame([{
-        "timestamp_utc": "2026-10-18T10:00:00Z", "location_id": "H2S-01",
-        "current_speed_kmph": 24, "free_flow_speed_kmph": 45,
-        "confidence": 0.92, "temperature_c": 30.5, "humidity_pct": 78,
-        "rain_1h_mm": 0.0, "latitude": 22.5851, "longitude": 88.3468
-    }])
-    st.download_button("Download example CSV (illustrative values)", example.to_csv(index=False),
-                       "traffic_csv_template.csv", mime="text/csv")
-
-file = st.file_uploader("Upload a CSV with historical Kolkata traffic observations", type=["csv"])
-if file is None and st.session_state.get("use_default_historical_csv", False):
-    historical = ROOT / "data/raw/kolkata_traffic_weather.csv"
-    if historical.is_file():
-        file = historical
-        st.info("Using saved real Kolkata historical CSV. Upload another CSV to override.")
-    else:
-        st.error("Saved historical CSV is missing.")
-        st.stop()
-if file is None:
-    st.info("Upload a CSV to see predictions. The example CSV is only a format template, not real measured data.")
+    sample = pd.DataFrame([{"timestamp_utc":"2026-10-18T10:00:00Z","location_id":"example-road",
+        "current_speed_kmph":24,"free_flow_speed_kmph":45,"confidence":0.92,
+        "temperature_c":30,"humidity_pct":75,"rain_1h_mm":0,
+        "latitude":22.5851,"longitude":88.3468}])
+    st.download_button("Download sample CSV", sample.to_csv(index=False), "traffic_template.csv")
+uploaded = st.file_uploader("Upload traffic + weather CSV (any city)", type=["csv"])
+use_saved = local and st.checkbox("Use saved Kolkata CSV", value=True)
+source = uploaded
+if source is None and use_saved:
+    path = ROOT / "data/raw/kolkata_traffic_weather.csv"
+    if path.is_file():
+        source = path
+if source is None:
+    st.info("Upload a CSV to predict traffic 15 minutes after each recorded observation.")
     st.stop()
-
 try:
-    with st.spinner("Loading model and predicting..."):
+    with st.spinner("Predicting..."):
         ensure_model()
-        predictions, rejected = predict_csv(io.BytesIO(file.getvalue()) if hasattr(file, "getvalue") else file)
-except (ValueError, FileNotFoundError, RuntimeError, pd.errors.ParserError, pd.errors.EmptyDataError) as exc:
-    st.error(f"Cannot predict: {exc}")
+        predictions, rejected = predict_csv(io.BytesIO(source.getvalue()) if hasattr(source,"getvalue") else source)
+except Exception as exc:
+    st.error("CSV prediction could not run: " + str(exc))
     st.stop()
-except Exception:
-    st.error("Unexpected prediction error. Check the app logs; no results were generated.")
-    st.stop()
-
-if not rejected.empty:
-    st.warning(f"{len(rejected)} invalid row(s) skipped.")
-    st.dataframe(rejected[["source_row", "error"]], use_container_width=True)
 if predictions.empty:
-    st.error("No valid rows available for prediction.")
+    st.warning("No valid observations found.")
     st.stop()
-
-st.success(f"Predicted {len(predictions)} historical observation(s).")
-st.caption("Each result refers to 15 minutes after its own observation timestamp, not 15 minutes from now.")
-a, b, c = st.columns(3)
-a.metric("Valid rows", len(predictions))
-b.metric("Rejected rows", len(rejected))
-c.metric("Prediction horizon", "15 minutes")
 roads = sorted(predictions["location_id"].astype(str).unique())
-selected = st.multiselect("Filter roads", roads, default=roads)
-shown = predictions[predictions["location_id"].isin(selected)].copy()
-st.subheader("Prediction results")
-st.dataframe(shown, use_container_width=True, hide_index=True)
-st.download_button("Download predictions CSV", predictions.to_csv(index=False),
-                   "kolkata_15min_predictions.csv", mime="text/csv")
-if not rejected.empty:
-    st.download_button("Download invalid row report", rejected.to_csv(index=False),
-                       "invalid_rows.csv", mime="text/csv")
-
-st.subheader("Kolkata road checkpoints")
-KOLKATA_LOCATIONS = {
-    "Esplanade": (22.5646, 88.3510),
-    "Park Street": (22.5535, 88.3520),
-    "Howrah Bridge": (22.5851, 88.3468),
-    "EM Bypass": (22.5395, 88.3960),
-    "Salt Lake": (22.5726, 88.4338),
-}
-with st.expander("Original Kolkata route locations"):
-    start = st.selectbox("Starting point", list(KOLKATA_LOCATIONS), index=0, key="csv_start")
-    destination = st.selectbox("Destination", list(KOLKATA_LOCATIONS), index=2, key="csv_end")
-    landmark_map = folium.Map(location=[22.5726, 88.3639], zoom_start=11)
-    for name, coordinates in KOLKATA_LOCATIONS.items():
-        folium.Marker(coordinates, tooltip=name).add_to(landmark_map)
-    st_folium(landmark_map, height=320, returned_objects=[], key="csv_landmarks")
-    st.caption("Offline: landmarks only, not calculated road routes or live ETAs. Use Original dashboard for FastAPI routing.")
-
-if {"latitude", "longitude"}.issubset(shown.columns):
-    mapped = shown.dropna(subset=["latitude", "longitude"])
-    mapped = mapped[mapped["latitude"].between(22.0, 23.0) &
-                    mapped["longitude"].between(87.5, 89.0)]
+chosen = st.selectbox("Road / checkpoint", roads)
+one = predictions[predictions["location_id"].astype(str).eq(chosen)].sort_values("timestamp_utc").iloc[-1]
+st.metric("Predicted traffic (15 min after observation)", str(one["predicted_congestion"]))
+st.caption("Observation: " + str(one["timestamp_utc"]) + " • Forecast: " + str(one["prediction_at_utc"]))
+st.caption("Historical forecast, NOT current live traffic. Model trained in Kolkata; other cities are experimental.")
+with st.expander("All results and download"):
+    st.dataframe(predictions, use_container_width=True, hide_index=True)
+    st.download_button("Download prediction CSV", predictions.to_csv(index=False),
+                       "traffic_15min_predictions.csv", mime="text/csv")
+    if not rejected.empty:
+        st.warning(str(len(rejected)) + " invalid rows skipped")
+        st.download_button("Download rejected rows", rejected.to_csv(index=False), "rejected_rows.csv")
+st.subheader("Locations on map")
+if {"latitude","longitude"}.issubset(predictions.columns):
+    mapped = predictions.dropna(subset=["latitude","longitude"])
+    mapped = mapped[mapped["latitude"].between(-90,90) & mapped["longitude"].between(-180,180)]
     if not mapped.empty:
-        # Show the latest uploaded observation per road, not a continuous predicted route.
         latest = mapped.sort_values("timestamp_utc").drop_duplicates("location_id", keep="last")
-        m = folium.Map(location=[22.5726, 88.3639], zoom_start=11, tiles="OpenStreetMap")
-        colors = {"Low": "green", "Moderate": "orange", "Heavy": "red"}
+        center = [float(latest["latitude"].mean()), float(latest["longitude"].mean())]
+        m = folium.Map(location=center, zoom_start=10, tiles="OpenStreetMap")
+        colors = {"Low":"green","Moderate":"orange","Heavy":"red"}
         for _, row in latest.iterrows():
-            label = str(row["predicted_congestion"])
-            folium.CircleMarker(
-                location=[float(row["latitude"]), float(row["longitude"])],
-                radius=9, color=colors.get(label, "gray"), fill=True,
-                fill_opacity=0.8,
-                tooltip=f"{row['location_id']}: {label} at {row['prediction_at_utc']}",
-            ).add_to(m)
-        st_folium(m, width=None, height=430, returned_objects=[])
-        st.caption("Colored points are predicted checkpoint conditions, not road-wide route forecasts.")
+            folium.CircleMarker([float(row["latitude"]),float(row["longitude"])],
+                radius=8, color=colors.get(str(row["predicted_congestion"]),"gray"),
+                fill=True, tooltip=str(row["location_id"]) + ": " + str(row["predicted_congestion"])).add_to(m)
+        st_folium(m, height=380, returned_objects=[], key="global_csv_map")
+        st.caption("Map tiles require internet; predicted points are from the CSV, not a live route.")
     else:
-        st.info("No usable Kolkata coordinates in selected rows.")
+        st.info("No valid coordinates to plot.")
 else:
-    st.info("Add latitude and longitude columns to display checkpoints on the map.")
-
-st.divider()
-st.caption("Offline historical prediction • TomTom/OpenWeather are not called • "
-           "Model probability is not a calibrated reliability guarantee.")
+    st.info("Add latitude and longitude columns for a worldwide map.")
