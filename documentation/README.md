@@ -3,33 +3,39 @@
 ## Project
 Kolkata Traffic Congestion Prediction System
 
-## Overview
-This project uses historical traffic and weather observations from TomTom and OpenWeather to train a Python Random Forest model for 15-minute-ahead congestion classification.
+## The two supported versions
 
-## Architecture
-1. Data collection: TomTom Traffic API and OpenWeather API.
-2. Data storage: historical CSV in `data/raw/`.
-3. Data cleaning and feature engineering: Python scripts in `ml/`.
-4. ML training and evaluation: `ml/train_model.py` and `ml/test_model.py`.
-5. Backend: FastAPI in `backend/`.
-6. Frontend: Streamlit in `frontend/`.
+### 1. Online — Live Kolkata + CSV Upload
+- Streamlit Community Cloud frontend.
+- FastAPI backend deployed on Render.
+- TomTom Traffic API supplies live traffic observations.
+- OpenWeather API supplies current weather observations.
+- CSV Upload page accepts a traffic/weather CSV and generates ML predictions.
 
-## Deployment
-- Backend: Render (check environment variables and model artifact before demo).
-- Frontend: Streamlit Community Cloud.
-- API credentials must be configured through deployment secrets/environment variables, never committed.
+### 2. Local PC — Completely Offline
+- Download the repository and dataset to a computer.
+- Install Python dependencies and prepare the model once.
+- Run `frontend/local_app.py` locally.
+- Choose either the bundled Kolkata historical dataset or a local CSV upload.
+- No FastAPI server, API keys, TomTom, OpenWeather or internet connection is used while running the prepared local application.
 
-## Submission documentation checklist
+## ML workflow
+1. Historical observations are stored in `data/raw/`.
+2. Python scripts in `ml/` clean data and create features.
+3. `ml/train_model.py` trains the Random Forest model.
+4. `ml/csv_inference.py` validates uploaded CSV rows and predicts congestion.
+5. Predictions represent the target approximately 15 minutes after each observation timestamp.
+
+## Documentation checklist
 - [ ] Problem statement, scope and objectives
-- [ ] Architecture and data flow diagram
+- [ ] Architecture and data flow diagrams for both versions
 - [ ] Data collection and dataset description
 - [ ] Preprocessing and feature engineering
-- [ ] ML methodology, chronological split and evaluation metrics
-- [ ] Backend API endpoints and error handling
-- [ ] Frontend screenshots and user workflow
-- [ ] Deployment and configuration guide
+- [ ] ML methodology and evaluation metrics
+- [ ] Online backend API endpoints and error handling
+- [ ] Screenshots of online and offline workflows
+- [ ] Deployment and local offline setup guides
 - [ ] Test cases and actual test results
-- [ ] Limitations, future improvements and team contributions
+- [ ] Limitations and team contributions
 
-## Source code
-See the repository root README and the `backend/`, `frontend/`, and `ml/` folders.
+API credentials must remain in private deployment environment variables and must never be committed to GitHub.
