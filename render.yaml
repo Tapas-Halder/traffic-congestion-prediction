@@ -1,0 +1,23 @@
+# Render Blueprint for the FastAPI backend.
+# Keep the repository root as the service root: backend imports ml/ and reads data/.
+services:
+  - type: web
+    name: kolkata-traffic-api
+    runtime: python
+    plan: free
+    buildCommand: pip install -r backend/requirements.txt && python backend/prepare_model.py
+    startCommand: uvicorn app.main:app --app-dir backend --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: TOMTOM_API_KEY
+        sync: false
+      - key: OPENWEATHER_API_KEY
+        sync: false
+      - key: CITY
+        value: Kolkata
+      - key: LATITUDE
+        value: "22.5726"
+      - key: LONGITUDE
+        value: "88.3639"
+      - key: REQUEST_TIMEOUT
+        value: "10"
