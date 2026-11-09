@@ -1,41 +1,24 @@
-# Project Documentation
+# Documentation
 
-## Project
-Kolkata Traffic Congestion Prediction System
+This folder contains the official project-submission materials.
 
-## The two supported versions
+## Deliverables
+- `Kolkata_Traffic_Congestion_Project_Report_15_Pages.pdf` — 15-page project report.
+- `Kolkata_Traffic_Congestion_Project_Presentation_8_Slides.pptx` — 8-slide presentation.
+- `screenshots/` — genuine screenshots captured from the running application.
 
-### 1. Online — Live Kolkata + CSV Upload
-- Streamlit Community Cloud frontend.
-- FastAPI backend deployed on Render.
-- TomTom Traffic API supplies live traffic observations.
-- OpenWeather API supplies current weather observations.
-- CSV Upload page accepts a traffic/weather CSV and generates ML predictions.
+## Team
+- Tapas Halder — Team Leader
+- Soumyadeep Mandal
+- Subhajit Podder
+- Sumit Kumar Mandal
+- Pammi Biswas — Documentation preparation only
+- Mentor: Subhashish (surname not supplied)
 
-### 2. Local PC — Completely Offline
-- Download the repository and dataset to a computer.
-- Install Python dependencies and prepare the model once.
-- Run `frontend/local_app.py` locally.
-- Choose either the bundled Kolkata historical dataset or a local CSV upload.
-- No FastAPI server, API keys, TomTom, OpenWeather or internet connection is used while running the prepared local application.
+**Signature status:** Digital signatures are pending. Do not replace placeholders with fabricated signatures.
 
-## ML workflow
-1. Historical observations are stored in `data/raw/`.
-2. Python scripts in `ml/` clean data and create features.
-3. `ml/train_model.py` trains the Random Forest model.
-4. `ml/csv_inference.py` validates uploaded CSV rows and predicts congestion.
-5. Predictions represent the target approximately 15 minutes after each observation timestamp.
+## Important evaluation note
+The repository's reported held-out accuracy is 60.22%, macro F1 is 54.81%, and majority-class baseline accuracy is 79.77%. The current model is below the reported majority baseline; the report must state this limitation honestly.
 
-## Documentation checklist
-- [ ] Problem statement, scope and objectives
-- [ ] Architecture and data flow diagrams for both versions
-- [ ] Data collection and dataset description
-- [ ] Preprocessing and feature engineering
-- [ ] ML methodology and evaluation metrics
-- [ ] Online backend API endpoints and error handling
-- [ ] Screenshots of online and offline workflows
-- [ ] Deployment and local offline setup guides
-- [ ] Test cases and actual test results
-- [ ] Limitations and team contributions
-
-API credentials must remain in private deployment environment variables and must never be committed to GitHub.
+## Screenshot policy
+Only add genuine screenshots from the running Streamlit application and backend tests. Do not present mockups as test evidence.
