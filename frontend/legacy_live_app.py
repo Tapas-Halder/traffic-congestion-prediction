@@ -328,21 +328,22 @@ def load_all_current():
 
 # ══════════════════════════════════════════════════════════════════════════════
 # SIMPLE, USER-FRIENDLY KOLKATA DASHBOARD
-# Technical diagnostics stay in the backend/logs, not on the public dashboard.
+# Public-facing text is plain English; technical diagnostics stay in backend/logs.
 # ══════════════════════════════════════════════════════════════════════════════
 with st.sidebar:
     st.markdown("## 🚦 TrafficIQ")
-    st.caption("সহজে জানুন কলকাতার রাস্তায় এখন কী অবস্থা")
-    selected_name = st.selectbox("কোন এলাকার খবর দেখতে চান?", KNOWN_PLACES, index=0)
+    st.caption("Your simple guide to traffic across Kolkata")
+    selected_name = st.selectbox("Choose an area", KNOWN_PLACES, index=0)
     selected = next(loc for loc in KOLKATA_LOCATIONS if loc["name"] == selected_name)
-    if st.button("🔄 নতুন তথ্য দেখুন", use_container_width=True):
+    if st.button("↻ Refresh traffic", use_container_width=True):
         st.cache_data.clear()
         st.rerun()
+    st.caption("Live updates · Kolkata")
 
-st.title("🚦 Kolkata Traffic Update")
-st.caption(f"এখনকার যানজট এবং আগামী ১৫ মিনিটের সম্ভাব্য অবস্থা · {selected_name}")
+st.title("Kolkata Traffic Dashboard")
+st.caption(f"Current road conditions and a 15-minute forecast for **{selected_name}**")
 
-with st.spinner("রাস্তার সর্বশেষ তথ্য আনা হচ্ছে…"):
+with st.spinner("Getting the latest road and weather updates..."):
     health = get_health()
     if health["ok"]:
         current = get_current(selected)
@@ -366,80 +367,80 @@ if collected_at is None and pred:
 
 def friendly_traffic_label(value):
     if not value:
-        return "তথ্য পাওয়া যায়নি"
+        return "Not available"
     normalized = str(value).strip().lower()
-    if "heavy" in normalized or "high" in normalized:
-        return "প্রচণ্ড যানজট"
-    if "moderate" in normalized or "medium" in normalized:
-        return "মাঝারি যানজট"
-    if "low" in normalized or "light" in normalized or "free" in normalized:
-        return "কম যানজট"
-    return str(value)
+    if any(word in normalized for word in ("heavy", "high", "severe")):
+        return "Heavy traffic"
+    if any(word in normalized for word in ("moderate", "medium")):
+        return "Moderate traffic"
+    if any(word in normalized for word in ("low", "light", "free")):
+        return "Light traffic"
+    return str(value).replace("_", " ").title()
 
 def friendly_current_status(key):
     return {
-        "Heavy": "প্রচণ্ড যানজট",
-        "Moderate": "মাঝারি যানজট",
-        "Low": "রাস্তা বেশ ফাঁকা",
-        None: "তথ্য পাওয়া যায়নি",
+        "Heavy": "Heavy traffic",
+        "Moderate": "Moderate traffic",
+        "Low": "Roads are moving well",
+        None: "Traffic data unavailable",
     }[key]
 
 if not current["ok"]:
-    st.warning("এই মুহূর্তে রাস্তার তথ্য পাওয়া যাচ্ছে না। কিছুক্ষণ পরে আবার চেষ্টা করুন।")
+    st.warning("We couldn't get the latest traffic update. Please try again in a little while.")
 elif info and location_mismatch(selected_name, info["reported_location"]):
-    st.info("এই এলাকার আলাদা তথ্য এখন পাওয়া যায়নি। নিচের তথ্যটি অন্য একটি এলাকার হতে পারে।")
+    st.info("The latest update may belong to a nearby area rather than the selected area.")
 
-# Main information: current conditions and the model's 15-minute forecast.
+# Current conditions and the ML forecast are the two main things visitors need.
 now_col, forecast_col = st.columns(2, gap="large")
 with now_col:
-    st.markdown("### 🚗 এখনকার যানজট")
+    st.markdown("### 🚗 Traffic right now")
     now_label = friendly_current_status(status_key)
     now_color = status["color"]
     st.markdown(
-        f'<div class="kpi" style="min-height:150px">'
-        f'<div class="kpi-label">এই মুহূর্তের রাস্তার অবস্থা</div>'
+        f'<div class="kpi" style="min-height:145px">'
+        f'<div class="kpi-label">Current road condition</div>'
         f'<div class="kpi-value" style="font-size:27px;color:{now_color}">{esc(now_label)}</div>'
         f'<div class="kpi-sub">{esc(selected_name)}</div></div>',
         unsafe_allow_html=True,
     )
     if traffic["current_speed"] is not None:
-        st.metric("গাড়ি চলছে গড়ে", f"{traffic['current_speed']:.0f} কিমি/ঘণ্টা")
+        st.metric("Current average speed", f"{traffic['current_speed']:.0f} km/h")
     else:
-        st.caption("গাড়ির গতির তথ্য পাওয়া যায়নি।")
+        st.caption("Current speed information is not available.")
 
 with forecast_col:
-    st.markdown("### 🔮 ১৫ মিনিট পরের পূর্বাভাস")
+    st.markdown("### 🔮 Next 15 minutes")
     if pred_label:
         forecast_label = friendly_traffic_label(pred_label)
         forecast_color = prediction_color(pred_label) or "#91a4bc"
         st.markdown(
-            f'<div class="kpi" style="min-height:150px">'
-            f'<div class="kpi-label">আমাদের মডেলের অনুমান</div>'
+            f'<div class="kpi" style="min-height:145px">'
+            f'<div class="kpi-label">Predicted road condition</div>'
             f'<div class="kpi-value" style="font-size:27px;color:{forecast_color}">{esc(forecast_label)}</div>'
-            f'<div class="kpi-sub">{esc(selected_name)} · আগামী ১৫ মিনিট</div></div>',
+            f'<div class="kpi-sub">{esc(selected_name)} · 15-minute forecast</div></div>',
             unsafe_allow_html=True,
         )
-        if "প্রচণ্ড" in forecast_label:
-            st.warning("আগামী ১৫ মিনিটে যানজট বাড়তে পারে। যাত্রার আগে আবার দেখে নিন।")
-        elif "মাঝারি" in forecast_label:
-            st.info("কিছুটা ধীরগতির যান চলাচল হতে পারে।")
-        elif "কম যানজট" in forecast_label:
-            st.success("যান চলাচল স্বাভাবিক থাকার সম্ভাবনা বেশি।")
+        if forecast_label == "Heavy traffic":
+            st.warning("Traffic may be slow. Consider allowing extra travel time.")
+        elif forecast_label == "Moderate traffic":
+            st.info("Some delays may occur.")
+        elif forecast_label == "Light traffic":
+            st.success("Traffic is expected to move more freely.")
     else:
         st.markdown(
-            '<div class="kpi" style="min-height:150px">'
-            '<div class="kpi-label">আগামী ১৫ মিনিট</div>'
-            '<div class="kpi-value" style="font-size:22px;color:#91a4bc">পূর্বাভাস পাওয়া যায়নি</div>'
-            '<div class="kpi-sub">পরে আবার চেষ্টা করুন</div></div>',
+            '<div class="kpi" style="min-height:145px">'
+            '<div class="kpi-label">15-minute forecast</div>'
+            '<div class="kpi-value" style="font-size:22px;color:#91a4bc">Forecast unavailable</div>'
+            '<div class="kpi-sub">Please try again later</div></div>',
             unsafe_allow_html=True,
         )
 
-st.markdown("### 🌤️ আজকের আবহাওয়া")
+st.markdown("### 🌤️ Local weather")
 weather_cols = st.columns(3)
 weather_items = [
-    ("তাপমাত্রা", f"{weather['temperature']:.0f}°C" if weather["temperature"] is not None else "পাওয়া যায়নি"),
-    ("আবহাওয়া", weather["condition"].capitalize() if weather["condition"] else "পাওয়া যায়নি"),
-    ("বৃষ্টিপাত", f"{weather['rainfall']:g} মিমি" if weather["rainfall"] is not None else "পাওয়া যায়নি"),
+    ("Temperature", f"{weather['temperature']:.0f}°C" if weather["temperature"] is not None else "Not available"),
+    ("Conditions", weather["condition"].capitalize() if weather["condition"] else "Not available"),
+    ("Rainfall", f"{weather['rainfall']:g} mm" if weather["rainfall"] is not None else "Not available"),
 ]
 for column, (label, value) in zip(weather_cols, weather_items):
     with column:
@@ -449,30 +450,30 @@ for column, (label, value) in zip(weather_cols, weather_items):
             unsafe_allow_html=True,
         )
 
-st.markdown("### 📈 রাস্তার গতির পরিবর্তন")
+st.markdown("### 📈 Recent traffic speed")
 history = load_history(HISTORICAL_CSV_PATH, selected_name)
 if history["df"] is None:
-    st.caption("এই এলাকার আগের গতির তথ্য এখনও পাওয়া যায়নি। তথ্য পাওয়া গেলে এখানে সহজ গ্রাফ দেখা যাবে।")
+    st.caption("A speed history chart will appear here when previous observations are available for this area.")
 else:
     frame = history["df"]
     fig = go.Figure()
     fig.add_trace(go.Scatter(
         x=frame["time"], y=frame["speed"], mode="lines",
-        name="গাড়ির গতি", line=dict(color="#4da3ff", width=3),
+        name="Traffic speed", line=dict(color="#4da3ff", width=3),
         fill="tozeroy", fillcolor="rgba(77,163,255,0.12)",
     ))
     fig.update_layout(
         height=250, margin=dict(l=8, r=8, t=12, b=8),
         paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
         font={"color": "#a9bad0"},
-        xaxis_title="", yaxis_title="গতি (কিমি/ঘণ্টা)",
+        xaxis_title="", yaxis_title="Speed (km/h)",
         showlegend=False,
         xaxis=dict(showgrid=False, tickfont=dict(size=10)),
         yaxis=dict(showgrid=True, gridcolor="rgba(145,164,188,0.15)", rangemode="tozero"),
     )
     st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
-    st.caption("গ্রাফে লাইন উপরে উঠলে গাড়ির গতি বাড়ছে, নিচে নামলে গতি কমছে।")
+    st.caption("A rising line means vehicles are moving faster; a falling line means they are slowing down.")
 
 if collected_at:
-    st.caption(f"সর্বশেষ তথ্য: {fmt_ts(collected_at)}")
-st.caption("যানজটের পূর্বাভাস একটি অনুমান; রাস্তায় বের হওয়ার আগে আবার তথ্য দেখে নিন।")
+    st.caption(f"Last updated: {fmt_ts(collected_at)}")
+st.caption("Predictions are estimates, not guarantees. Check the latest conditions before you travel.")
