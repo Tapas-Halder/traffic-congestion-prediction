@@ -21,6 +21,23 @@ from ml.random_forest_model import MODEL_PATH, load_model
 OFFLINE_MODE = os.getenv("TRAFFICIQ_OFFLINE_MODE", "").strip() == "1"
 MAP_TILES = None if OFFLINE_MODE else "OpenStreetMap"
 
+st.markdown("""
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
+.stApp{background:radial-gradient(ellipse at 15% 0%,#142c49 0%,#08111f 45%,#070d18 100%);color:#edf5ff;font-family:'DM Sans',sans-serif}
+[data-testid="stSidebar"]{background:#101d30;border-right:1px solid #263850}
+.block-container{max-width:1400px;padding-top:2rem}
+h1,h2,h3{font-family:'Space Grotesk',sans-serif!important;color:#f3f8ff;letter-spacing:-.03em}
+h1{font-size:2.25rem!important}
+p,label{color:#a9bad0}
+div[data-testid="stMetric"]{background:linear-gradient(145deg,#17283e,#101c2d);border:1px solid #2a405b;padding:15px;border-radius:15px}
+div[data-testid="stMetricValue"]{color:#f3f8ff;font-family:'Space Grotesk',sans-serif}
+.stButton>button,.stDownloadButton>button{border-radius:10px;background:linear-gradient(110deg,#1768b4,#258fc4);border:1px solid #3977b7;color:white;font-weight:700;min-height:42px}
+.stAlert{border-radius:12px}
+[data-testid="stDataFrame"]{border:1px solid #263850;border-radius:12px;overflow:hidden}
+</style>
+""", unsafe_allow_html=True)
+
 st.title("🚦 TrafficIQ — CSV Prediction")
 st.caption("Upload traffic observations · Prediction target: 15 minutes after each observation")
 st.warning("The ML model was trained on Kolkata data. Predictions for other cities are experimental and not locally validated.")
