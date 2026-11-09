@@ -128,14 +128,41 @@ esc = html.escape
 st.markdown(
     """
 <style>
-  .kpi{background:#171c27;border:1px solid #222838;border-radius:14px;padding:14px 16px;min-height:104px}
-  .kpi-label{font-size:12px;color:#7b82a0;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
-  .kpi-value{font-weight:700;margin:6px 0 2px;line-height:1.2;word-break:break-word}
-  .kpi-sub{font-size:12px;color:#7b82a0}
-  .pill{display:inline-block;padding:2px 10px;border-radius:6px;font-size:12px;font-weight:700}
-  .field-label{font-size:11px;color:#7b82a0;text-transform:uppercase;letter-spacing:.4px}
-  .field-value{font-size:16px;font-weight:600}
-  .muted{color:#7b82a0}
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap');
+:root { --bg:#08111f; --panel:#111d2e; --panel2:#14243a; --line:#263850; --muted:#91a4bc; --blue:#4da3ff; --cyan:#42d6d0; }
+html, body, [class*="css"] { font-family:'DM Sans',sans-serif; }
+.stApp { background:radial-gradient(ellipse at 15% 0%,#142c49 0%,#08111f 42%,#070d18 100%); color:#edf5ff; }
+[data-testid="stHeader"] { background:rgba(8,17,31,.72); }
+[data-testid="stSidebar"] { background:linear-gradient(180deg,#101d30 0%,#0b1524 100%); border-right:1px solid #263850; }
+[data-testid="stSidebar"] * { color:#dce9f8; }
+.block-container { max-width:1500px; padding-top:2.1rem; padding-bottom:3rem; }
+h1,h2,h3 { font-family:'Space Grotesk',sans-serif !important; letter-spacing:-.035em; color:#f3f8ff; }
+h1 { font-size:2.35rem !important; font-weight:700 !important; }
+h2 { font-size:1.55rem !important; } h3 { font-size:1.12rem !important; }
+p, label, .stCaption { color:#a9bad0; }
+.kpi { background:linear-gradient(145deg,#17283e 0%,#101c2d 100%); border:1px solid #2a405b; border-radius:18px; padding:18px 20px; min-height:118px; box-shadow:0 12px 30px rgba(0,0,0,.16); transition:transform .18s ease,border-color .18s ease; }
+.kpi:hover { transform:translateY(-2px); border-color:#4da3ff; }
+.kpi-label { font-size:11px; color:#8fa7c2; font-weight:700; text-transform:uppercase; letter-spacing:1.15px; }
+.kpi-value { font-family:'Space Grotesk',sans-serif; font-weight:700; margin:9px 0 3px; line-height:1.15; word-break:break-word; }
+.kpi-sub { font-size:11px; color:#8298b2; }
+.pill { display:inline-block; padding:5px 11px; border-radius:99px; font-size:11px; font-weight:700; letter-spacing:.2px; border:1px solid currentColor; }
+.field-label { font-size:10px; color:#8298b2; text-transform:uppercase; letter-spacing:1px; font-weight:700; }
+.field-value { font-size:16px; font-weight:700; color:#edf5ff; margin-top:4px; }
+.muted { color:#91a4bc; }
+.stButton>button, .stDownloadButton>button { border-radius:10px; border:1px solid #3977b7; background:linear-gradient(110deg,#1768b4,#258fc4); color:white; font-weight:700; min-height:42px; transition:all .2s ease; }
+.stButton>button:hover, .stDownloadButton>button:hover { border-color:#70c8ff; color:white; box-shadow:0 6px 20px #1768b455; }
+div[data-testid="stMetric"] { background:linear-gradient(145deg,#17283e,#101c2d); border:1px solid #2a405b; padding:15px 17px; border-radius:15px; }
+div[data-testid="stMetricLabel"] { color:#91a4bc; }
+div[data-testid="stMetricValue"] { color:#f3f8ff; font-family:'Space Grotesk',sans-serif; }
+.stTabs [data-baseweb="tab-list"] { gap:8px; border-bottom:1px solid #263850; }
+.stTabs [data-baseweb="tab"] { background:#101d2e; border:1px solid #263850; border-radius:10px 10px 0 0; padding:10px 16px; color:#9fb2c9; }
+.stTabs [aria-selected="true"] { background:#183452 !important; color:#73c5ff !important; border-color:#3977b7 !important; }
+div[data-testid="stVerticalBlockBorderWrapper"] { border-color:#263850 !important; border-radius:15px !important; background:rgba(17,29,46,.55); }
+.stAlert { border-radius:12px; }
+input, textarea, [data-baseweb="select"] > div { background:#101d2e !important; border-color:#314761 !important; }
+hr { border-color:#263850 !important; }
+[data-testid="stDataFrame"] { border:1px solid #263850; border-radius:12px; overflow:hidden; }
+@media(max-width:700px) { .block-container{padding:1rem .8rem 2rem;} h1{font-size:1.8rem !important;} .kpi{padding:14px;min-height:100px;} }
 </style>
 """,
     unsafe_allow_html=True,
