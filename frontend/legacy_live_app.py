@@ -331,7 +331,7 @@ def load_all_current():
 # ══════════════════════════════════════════════════════════════════════════════
 with st.sidebar:
     st.markdown("## 🚦 TrafficIQ")
-    st.caption("Kolkata traffic congestion prediction")
+    st.caption("Kolkata road updates and 15-minute traffic forecast")
     st.divider()
 
     selected_name = st.selectbox("📍 Location", KNOWN_PLACES, index=0)
@@ -348,15 +348,13 @@ with st.sidebar:
     if prediction_mode == "Offline":
         st.info("Historical prediction — no live traffic or weather API requests.")
     else:
-        st.warning("Live mode uses external APIs and may fail when the TomTom quota is exhausted.")
+        st.caption("Live road and weather updates")
 
     # Task Twelve: refresh button that triggers real API requests again.
     if st.button("🔄 Refresh data", use_container_width=True):
         st.cache_data.clear()
 
     st.divider()
-    st.markdown("**Backend**")
-    st.caption(BACKEND_URL)
     health_slot = st.empty()
     st.divider()
     st.caption(
@@ -431,7 +429,7 @@ pred_label = prediction_label(pred["prediction"]) if pred else None
 # ══════════════════════════════════════════════════════════════════════════════
 # HEADER + ERROR SUMMARY + KPI CARDS  (Task Six)
 # ══════════════════════════════════════════════════════════════════════════════
-st.title("🚦 TrafficIQ — Kolkata")
+st.title("🚦 Kolkata Traffic")
 if prediction_mode == "Offline":
     st.caption(
         "Historical Kolkata traffic prediction using CSV + ML. "
@@ -439,7 +437,7 @@ if prediction_mode == "Offline":
     )
 else:
     st.caption(
-        f"Live traffic and weather via the FastAPI backend · showing **{selected_name}**"
+        f"Live road conditions near **{selected_name}**"
     )
 
 
@@ -504,10 +502,10 @@ if collected_at is None and pred:
 
 k1, k2, k3, k4 = st.columns(4)
 with k1:
-    kpi_card("Current Speed", fmt_speed(traffic["current_speed"]),
+    kpi_card("Road speed now", fmt_speed(traffic["current_speed"]),
              f"Free-flow: {fmt_speed(traffic['free_flow_speed'])}" if traffic["free_flow_speed"] is not None else "")
 with k2:
-    kpi_card("Traffic Status", status["label"] if status_key else UNAVAILABLE,
+    kpi_card("Traffic right now", status["label"] if status_key else UNAVAILABLE,
              "Current vs free-flow speed" if status_key else "", color=status["color"])
 with k3:
     temp = weather["temperature"]
@@ -515,19 +513,17 @@ with k3:
     weather_value = f"{temp:.0f}°C" if temp is not None else (cond.capitalize() if cond else UNAVAILABLE)
     kpi_card("Weather", weather_value, cond.capitalize() if (cond and temp is not None) else "")
 with k4:
-    kpi_card("Last Updated", fmt_ts(collected_at), "collected_at from backend" if collected_at else "")
+    kpi_card("Last updated", fmt_ts(collected_at), "Latest available update" if collected_at else "")
 
 st.write("")
-tab_overview, tab_roads, tab_map, tab_route, tab_pipeline = st.tabs(
-    ["📊 Overview", "🛣️ Roads", "🗺️ Map", "🛣️ Route", "⚙️ Pipeline"]
-)
+tab_overview, tab_roads, tab_map = st.tabs(["🏠 Dashboard", "🛣️ All areas", "🗺️ Kolkata map"])
 
 
 # ══════════════════════════════════════════════════════════════════════════════
 # TAB 1 — OVERVIEW  (Task Five + Task Seven)
 # ══════════════════════════════════════════════════════════════════════════════
 def render_prediction_card():
-    st.markdown("#### 🤖 ML prediction")
+    st.markdown("#### 🔮 Traffic forecast — next 15 minutes")
     with st.container(border=True):
         if not prediction_result["ok"]:
             error = prediction_result["error"]
@@ -539,7 +535,7 @@ def render_prediction_card():
             return
         color = prediction_color(pred_label)
         st.markdown(
-            f'<div class="field-label">Predicted congestion level</div>'
+            f'<div class="field-label">Expected traffic in 15 minutes</div>'
             f'<div style="font-size:26px;font-weight:700;color:{color}">{esc(pred_label)}</div>',
             unsafe_allow_html=True,
         )
@@ -561,25 +557,25 @@ def build_recommendation():
     lines = [f"Current speed at **{selected_name}** is **{traffic['current_speed']:.0f} km/h** "
              f"against a free-flow speed of **{traffic['free_flow_speed']:.0f} km/h**."]
     if status_key == "Heavy":
-        lines.append("Heavy congestion — consider delaying the trip or choosing another route.")
+        lines.append("Traffic is very slow here. If possible, allow extra time or choose another road.")
     elif status_key == "Moderate":
-        lines.append("Moderate congestion — allow extra travel time.")
+        lines.append("Traffic is slower than usual. Please allow a little extra travel time.")
     else:
-        lines.append("Traffic is flowing close to free-flow speed.")
+        lines.append("Traffic is moving smoothly at the moment.")
     cur_t, free_t = traffic["current_travel_time"], traffic["free_flow_travel_time"]
     if cur_t is not None and free_t is not None and cur_t > free_t:
         lines.append(f"Extra delay on this road segment (TomTom travel times): **{(cur_t - free_t) / 60:.1f} min**.")
     if pred_label:
-        lines.append(f"ML model prediction: **{esc(pred_label)}**.")
+        lines.append(f"In 15 minutes, traffic is expected to be **{esc(pred_label)}**.")
     return "  \n".join(lines)
 
 
 with tab_overview:
     # Alerts only when a verified condition exists.
     if status_key == "Heavy":
-        st.warning(f"⚠️ High congestion at **{selected_name}** based on live TomTom speed data.")
+        st.warning(f"🚦 Traffic is very slow at **{selected_name}** right now. If possible, allow extra travel time.")
     if pred_label and prediction_color(pred_label) == "#f54242":
-        st.warning(f"⚠️ The ML model predicts **{esc(pred_label)}** for **{selected_name}**.")
+        st.warning(f"🔮 Traffic may be **{esc(pred_label).lower()}** at **{selected_name}** in 15 minutes.")
 
     recommendation = build_recommendation()
     if recommendation:
@@ -590,7 +586,7 @@ with tab_overview:
     left, right = st.columns(2)
 
     with left:
-        st.markdown("#### Speed vs free-flow")
+        st.markdown("#### Is traffic moving normally?")
         ratio = speed_ratio(traffic["current_speed"], traffic["free_flow_speed"])
         if ratio is None:
             st.info(UNAVAILABLE + " — needs both current and free-flow speed from the API.")
@@ -622,7 +618,7 @@ with tab_overview:
     with right:
         render_prediction_card()
 
-    st.markdown("#### 🌤 Weather (OpenWeather via backend)")
+    st.markdown("#### 🌤 Weather now")
     w1, w2, w3, w4, w5 = st.columns(5)
     labeled(w1, "Temperature", f"{weather['temperature']:.0f} °C" if weather["temperature"] is not None else UNAVAILABLE)
     labeled(w2, "Humidity", f"{weather['humidity']:.0f}%" if weather["humidity"] is not None else UNAVAILABLE)
@@ -729,133 +725,8 @@ with tab_map:
         f"{legend}</div>"))
     # returned_objects=[] stops map clicks from re-running the script (and re-calling the APIs)
     st_folium(kolkata_map, height=480, use_container_width=True, returned_objects=[], key="kolkata_map")
-    st.caption("Marker colour is the traffic status from live API speeds. Grey = data unavailable for that location.")
+    st.caption("Green means traffic is moving well · Orange means slow traffic · Red means heavy traffic · Grey means no update.")
 
-
-# ══════════════════════════════════════════════════════════════════════════════
-# TAB 4 — TOMTOM ROAD ROUTING WITH SAMPLED LIVE TRAFFIC
-# ══════════════════════════════════════════════════════════════════════════════
-with tab_route:
-    st.caption("Road route from TomTom, or OSRM if TomTom Routing access is denied. Traffic colours are sampled estimates, not continuous measurements.")
-    r1, r2 = st.columns(2)
-    from_place = r1.selectbox("🟢 Starting point", KNOWN_PLACES, index=0, key="route_from")
-    to_place = r2.selectbox("🔴 Destination", KNOWN_PLACES, index=min(2, len(KNOWN_PLACES) - 1), key="route_to")
-    st.caption("🟢 Free flow  ·  🟠 Moderate  ·  🔴 Heavy  ·  ⚪ Data unavailable")
-
-    if from_place == to_place:
-        st.info("Choose two different locations.")
-    else:
-        (lat1, lon1), (lat2, lon2) = PLACE_COORDS[from_place], PLACE_COORDS[to_place]
-        @st.cache_data(ttl=300, show_spinner=False)
-        def fetch_road_route(base_url, start_lat, start_lon, end_lat, end_lon):
-            return call_backend(
-                base_url, "GET", "/api/v1/route",
-                params={"from_lat": start_lat, "from_lon": start_lon,
-                        "to_lat": end_lat, "to_lon": end_lon},
-                timeout=REQUEST_TIMEOUT,
-            )
-        with st.spinner("Loading road route and live traffic samples…"):
-            route_result = fetch_road_route(BACKEND_URL, lat1, lon1, lat2, lon2)
-        if not route_result["ok"]:
-            st.error("Road route unavailable. " + str(route_result["error"].get("detail") or route_result["error"]["message"]))
-        else:
-            route_data = route_result["data"]
-            provider = route_data.get("route_provider", "tomtom")
-            if provider == "osrm":
-                st.info("Road geometry: OpenStreetMap/OSRM fallback. Live traffic-aware ETA is unavailable; colours use sampled TomTom traffic data.")
-            coords = route_data.get("coordinates") or []
-            samples = route_data.get("samples") or []
-            distance = route_data.get("distance_meters")
-            travel_time = route_data.get("travel_time_seconds")
-            delay = route_data.get("traffic_delay_seconds")
-            c1, c2, c3 = st.columns(3)
-            c1.metric("Road distance", f"{distance / 1000:.1f} km" if isinstance(distance, (int, float)) else "Unavailable")
-            c2.metric("Estimated travel time", f"{round(travel_time / 60)} min" if isinstance(travel_time, (int, float)) else "Unavailable")
-            c3.metric("Traffic delay", f"{round(delay / 60)} min" if isinstance(delay, (int, float)) else "Unavailable")
-            if len(coords) >= 2:
-                route_map = folium.Map(location=[(lat1 + lat2) / 2, (lon1 + lon2) / 2], zoom_start=12, tiles="OpenStreetMap")
-                colors = {"low": "#34d47a", "moderate": "#f58542", "heavy": "#f54242", "unavailable": "#7b82a0"}
-                if samples:
-                    # Each colour extends only between sample midpoints. This is an approximation.
-                    for i, sample in enumerate(samples):
-                        left = 0 if i == 0 else (samples[i-1]["index"] + sample["index"]) // 2
-                        right = len(coords)-1 if i == len(samples)-1 else (sample["index"] + samples[i+1]["index"]) // 2
-                        if right > left:
-                            folium.PolyLine(coords[left:right+1], color=colors.get(sample["status"], "#7b82a0"),
-                                            weight=6, opacity=0.85, tooltip="Sampled traffic: " + sample["status"]).add_to(route_map)
-                else:
-                    folium.PolyLine(coords, color="#7b82a0", weight=6, opacity=.85).add_to(route_map)
-                folium.Marker([lat1, lon1], tooltip="From: " + from_place, icon=folium.Icon(color="green")).add_to(route_map)
-                folium.Marker([lat2, lon2], tooltip="To: " + to_place, icon=folium.Icon(color="red")).add_to(route_map)
-                route_map.fit_bounds(coords)
-                st_folium(route_map, height=400, use_container_width=True, returned_objects=[], key="road_route_map")
-            st.caption("Traffic colour is estimated from up to 10 TomTom Flow observations sampled along the road route. Unobserved stretches may differ.")
-
-# ══════════════════════════════════════════════════════════════════════════════
-# TAB 5 — PIPELINE  (Task Eleven) — each step reflects what was actually observed
-# ══════════════════════════════════════════════════════════════════════════════
-def step_status(kind, text):
-    icons = {"ok": ("✅", "#34d47a"), "error": ("❌", "#f54242"), "unknown": ("⚪", "#7b82a0")}
-    return icons[kind] + (text,)
-
-
-def pipeline_steps():
-    steps = []
-    # 1 + 2: traffic and weather, judged from the selected location's current-data response
-    if current["ok"]:
-        has_traffic = traffic["current_speed"] is not None and traffic["free_flow_speed"] is not None
-        has_weather = any(v is not None for v in weather.values())
-        steps.append(("1. Traffic data collection", "TomTom API",
-                      step_status("ok", "Data received") if has_traffic
-                      else step_status("error", "No traffic fields in the response")))
-        steps.append(("2. Weather data collection", "OpenWeather API",
-                      step_status("ok", "Data received") if has_weather
-                      else step_status("error", "No weather fields in the response")))
-    else:
-        reason = short_reason(current["error"])
-        steps.append(("1. Traffic data collection", "TomTom API", step_status("unknown", f"Unavailable: {reason}")))
-        steps.append(("2. Weather data collection", "OpenWeather API", step_status("unknown", f"Unavailable: {reason}")))
-    # 3: feature engineering happens inside the backend and is not directly observable here
-    steps.append(("3. Feature engineering", "Backend",
-                  step_status("ok", "Completed (inferred from a successful prediction)") if prediction_result["ok"]
-                  else step_status("unknown", "Cannot be confirmed — no successful prediction")))
-    # 4: ML inference
-    if prediction_result["ok"]:
-        steps.append(("4. ML inference", "Python model", step_status("ok", "Model returned a prediction")))
-    else:
-        error = prediction_result["error"]
-        text = "Model unavailable" if error["layer"] == "ml_model" else "Not reached — " + short_reason(error)
-        steps.append(("4. ML inference", "Python model", step_status("error" if error["layer"] == "ml_model" else "unknown", text)))
-    # 5: prediction response
-    if prediction_result["ok"]:
-        steps.append(("5. Prediction response", "FastAPI", step_status("ok", "Responding")))
-    elif health["ok"]:
-        steps.append(("5. Prediction response", "FastAPI",
-                      step_status("error", "Backend is up, but the prediction endpoint failed")))
-    else:
-        steps.append(("5. Prediction response", "FastAPI", step_status("error", "Backend unreachable")))
-    steps.append(("6. Dashboard rendering", "Streamlit", step_status("ok", "Running")))
-    return steps
-
-
-with tab_pipeline:
-    st.markdown("#### Actual workflow status")
-    st.caption("Status is based on what the backend actually returned in this refresh. "
-               "A passing health check does not mean ML predictions work — the prediction endpoint is checked separately.")
-    for name, provider, (icon, color, text) in pipeline_steps():
-        with st.container(border=True):
-            c1, c2 = st.columns([2, 5])
-            c1.markdown(f"**{esc(name)}**<br><span class='muted'>{esc(provider)}</span>", unsafe_allow_html=True)
-            c2.markdown(f'<span style="color:{color};font-weight:600">{icon} {esc(text)}</span>', unsafe_allow_html=True)
-
-    st.markdown("#### Model performance")
-    st.info("Accuracy, precision, recall and F1 will be shown here once the ML team provides verified results.")
-
-    with st.expander("Raw backend responses (for verifying field names with the backend team)"):
-        st.caption(f"GET {CURRENT_PATH} for {selected_name}")
-        st.json(current["raw"] if current["ok"] else current["error"])
-        st.caption(f"POST {PREDICT_PATH} for {selected_name}")
-        st.json(prediction_result["raw"] if prediction_result["ok"] else prediction_result["error"])
 
 st.divider()
-st.caption(f"TrafficIQ · Kolkata · backend: {BACKEND_URL} · last refresh {fetched_now}")
+st.caption(f"TrafficIQ · Kolkata · Last updated: {fetched_now}")
