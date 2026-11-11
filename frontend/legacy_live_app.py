@@ -327,6 +327,17 @@ def load_all_current():
 
 
 # ══════════════════════════════════════════════════════════════════════════════
+# Count one visit per Streamlit browser session (not on every rerun).
+# The backend stores timestamps only. The count is approximate, not unique people.
+if "trafficiq_visit_recorded" not in st.session_state:
+    visit_result = call_backend(BACKEND_URL, "POST", "/api/v1/visit", timeout=REQUEST_TIMEOUT)
+    if not visit_result["ok"]:
+        visit_result = call_backend(BACKEND_URL, "GET", "/api/v1/visits", timeout=REQUEST_TIMEOUT)
+    st.session_state["trafficiq_visit_recorded"] = True
+    st.session_state["trafficiq_visit_stats"] = (
+        visit_result["data"] if visit_result["ok"] and isinstance(visit_result["data"], dict) else None
+    )
+
 # SIMPLE, USER-FRIENDLY KOLKATA DASHBOARD
 # Public-facing text is plain English; technical diagnostics stay in backend/logs.
 # ══════════════════════════════════════════════════════════════════════════════
@@ -477,3 +488,13 @@ else:
 if collected_at:
     st.caption(f"Last updated: {fmt_ts(collected_at)}")
 st.caption("Predictions are estimates, not guarantees. Check the latest conditions before you travel.")
+
+
+# Public project visitor counter
+visit_stats = st.session_state.get("trafficiq_visit_stats")
+if isinstance(visit_stats, dict) and visit_stats.get("total") is not None:
+    st.divider()
+    visit_total, visit_day = st.columns(2)
+    visit_total.metric("Project visits", f"{int(visit_stats['total']):,}")
+    visit_day.metric("Visits in the last 24 hours", f"{int(visit_stats.get('last_24h') or 0):,}")
+    st.caption("Approximate browser sessions, not unique people. A new session or page reload may count again. Counts may reset if the hosting storage is cleared.")
