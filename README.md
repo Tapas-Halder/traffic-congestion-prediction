@@ -105,8 +105,8 @@ The recorded held-out evaluation reports **60.22% accuracy** and **54.81% macro 
 - `backend/`: FastAPI service and external API integration for the online version
 - `ml/`: Python data cleaning, training, prediction and evaluation code
 - `data/raw/kolkata_traffic_weather.csv`: bundled historical observations
-- `documentation/`: project and setup documentation
+- `documentation/`: project report, presentation and setup documentation
 
-## Team workflow
+## Public visitor counter\n\nThe live dashboard displays approximate browser-session visits using the FastAPI endpoints `POST /api/v1/visit` and `GET /api/v1/visits`. It is not a unique-person counter. SQLite storage may reset on Render redeploy unless `VISITS_DB_PATH` points to persistent storage.\n\n## Team workflow
 
 The team leader maintains `main`. Other team members work on their own branches and submit Pull Requests. The team leader reviews, tests and merges changes.

@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
 from app.routes import router as routes_router
+from app.visits import create_router as create_visits_router
 from app.schemas import PredictionRequest
 from app.services.collector import collect_current_data
 from app.services.features import build_prediction_features
@@ -15,6 +16,7 @@ logger = logging.getLogger(__name__)
 app = FastAPI(title="Kolkata Traffic Congestion API", version="0.2.0")
 
 app.include_router(routes_router)
+app.include_router(create_visits_router())
 
 app.add_middleware(
     CORSMiddleware,
