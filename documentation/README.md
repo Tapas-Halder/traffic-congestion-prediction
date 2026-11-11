@@ -1,20 +1,21 @@
 # TrafficIQ Documentation
 
-This folder contains the main project-submission documents.
+This folder contains project documentation and submission evidence.
 
-## Files
+## Planned binary deliverables
 - `TrafficIQ_Kolkata_Project_Presentation.pptx` — the 10-slide project presentation.
 - `TrafficIQ_Kolkata_Project_Report.docx` — the editable project report.
-- `README.md` — notes about the documentation and evidence.
 
-## What the report covers
+These two binary files are prepared, but are not yet present in this GitHub folder. They must be uploaded through GitHub's web interface (or a local Git push) to preserve their original Office file formats.
+
+## Report coverage
 Project overview, Kolkata scope, real-world data sources, architecture, API endpoints, machine-learning workflow, model evaluation, Streamlit features, deployment, visitor counter, testing, team responsibilities, limitations and future work.
 
-## Important accuracy note
+## Important model-evaluation note
 The repository README reports held-out accuracy of 60.22%, macro F1 of 54.81%, and majority-class baseline accuracy of 79.77%. The current model is below that baseline. Re-run and verify the evaluation before final submission; do not claim production-grade prediction performance.
 
 ## Screenshot evidence
-Only add genuine screenshots captured from the running application. No mockups or invented test results should be presented as evidence.
+Only add genuine screenshots captured from the running application. Do not present mockups or invented test results as evidence.
 
 ## Team
 - Tapas Halder — Team Leader; Backend & API Integration
@@ -23,4 +24,4 @@ Only add genuine screenshots captured from the running application. No mockups o
 - Subhajit Podder — ML Developer; Model Training & Evaluation
 - Pammi Biswas — Documentation
 
-No pending digital-signature statement is included. Add mentor details only after confirming the exact name and spelling.
+Add mentor details only after confirming the exact name and spelling.
