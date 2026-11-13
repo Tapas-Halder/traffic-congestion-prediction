@@ -1,5 +1,7 @@
 {
-  "total": 0,
-  "timestamps_last_24h": [],
-  "first_visit_at": null
+  "total": 1,
+  "timestamps_last_24h": [
+    "2026-11-13T07:19:42Z"
+  ],
+  "first_visit_at": "2026-11-13T07:19:42Z"
 }
