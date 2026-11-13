@@ -107,6 +107,14 @@ The recorded held-out evaluation reports **60.22% accuracy** and **54.81% macro 
 - `data/raw/kolkata_traffic_weather.csv`: bundled historical observations
 - `documentation/`: project report, presentation and setup documentation
 
-## Public visitor counter\n\nThe live dashboard displays approximate browser-session visits using the FastAPI endpoints `POST /api/v1/visit` and `GET /api/v1/visits`. It is not a unique-person counter. SQLite storage may reset on Render redeploy unless `VISITS_DB_PATH` points to persistent storage.\n\n## Team workflow
+## Public visitor counter\n\nThe live dashboard displays approximate browser-session visits using the FastAPI endpoints `POST /api/v1/visit` and `GET /api/v1/visits`. It is not a unique-person counter and does not store visitor identity or IP addresses.
+
+For persistent GitHub-backed storage, configure these environment variables in the **Render backend service**:
+- `VISITS_GITHUB_TOKEN`: a fine-grained GitHub token with Contents read/write permission for this repository.
+- `VISITS_GITHUB_REPO`: `Tapas-Halder/traffic-congestion-prediction` (optional default).
+- `VISITS_GITHUB_BRANCH`: `traffic-visit-data` (optional default).
+- `VISITS_GITHUB_PATH`: `data/visits.json` (optional default).
+
+The token must be stored only in Render Secrets / Environment, never committed to the repository or placed in Streamlit frontend secrets. Each new Streamlit browser session updates the small JSON counter file on the dedicated data branch. Without `VISITS_GITHUB_TOKEN`, local SQLite storage is used instead. GitHub API rate limits apply, so this is suitable for a small project/demo counter rather than high-traffic production analytics.\n\n## Team workflow
 
 The team leader maintains `main`. Other team members work on their own branches and submit Pull Requests. The team leader reviews, tests and merges changes.
