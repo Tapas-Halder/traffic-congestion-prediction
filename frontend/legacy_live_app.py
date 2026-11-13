@@ -135,7 +135,7 @@ html, body, [class*="css"] { font-family:'DM Sans',sans-serif; }
 [data-testid="stHeader"] { background:rgba(8,17,31,.72); }
 [data-testid="stSidebar"] { background:linear-gradient(180deg,#101d30 0%,#0b1524 100%); border-right:1px solid #263850; }
 [data-testid="stSidebar"] * { color:#dce9f8; }
-.block-container { max-width:1500px; padding-top:2.1rem; padding-bottom:3rem; }
+.block-container { max-width:1500px; padding-top:2.25rem; padding-bottom:3rem; }
 h1,h2,h3 { font-family:'Space Grotesk',sans-serif !important; letter-spacing:-.035em; color:#f3f8ff; }
 h1 { font-size:2.35rem !important; font-weight:700 !important; }
 h2 { font-size:1.55rem !important; } h3 { font-size:1.12rem !important; }
@@ -154,10 +154,13 @@ p, label, .stCaption { color:#a9bad0; }
 div[data-testid="stMetric"] { background:linear-gradient(145deg,#17283e,#101c2d); border:1px solid #2a405b; padding:15px 17px; border-radius:15px; }
 div[data-testid="stMetricLabel"] { color:#91a4bc; }
 div[data-testid="stMetricValue"] { color:#f3f8ff; font-family:'Space Grotesk',sans-serif; }
-.stTabs [data-baseweb="tab-list"] { gap:8px; border-bottom:1px solid #263850; }
+.stTabs [data-baseweb="tab-list"] { gap:10px; border-bottom:1px solid #263850; }
 .stTabs [data-baseweb="tab"] { background:#101d2e; border:1px solid #263850; border-radius:10px 10px 0 0; padding:10px 16px; color:#9fb2c9; }
 .stTabs [aria-selected="true"] { background:#183452 !important; color:#73c5ff !important; border-color:#3977b7 !important; }
 div[data-testid="stVerticalBlockBorderWrapper"] { border-color:#263850 !important; border-radius:15px !important; background:rgba(17,29,46,.55); }
+[data-testid="stHorizontalBlock"] { gap:1.25rem; }
+[data-testid="stVerticalBlock"] { gap:1rem; }
+.kpi { margin:5px 0 9px; }
 .stAlert { border-radius:12px; }
 input, textarea, [data-baseweb="select"] > div { background:#101d2e !important; border-color:#314761 !important; }
 hr { border-color:#263850 !important; }
@@ -497,4 +500,4 @@ if isinstance(visit_stats, dict) and visit_stats.get("total") is not None:
     visit_total, visit_day = st.columns(2)
     visit_total.metric("Project visits", f"{int(visit_stats['total']):,}")
     visit_day.metric("Visits in the last 24 hours", f"{int(visit_stats.get('last_24h') or 0):,}")
-    st.caption("Approximate browser sessions, not unique people. A new session or page reload may count again. Counts may reset if the hosting storage is cleared.")
+
