@@ -9,6 +9,7 @@ from pathlib import Path
 import folium
 import pandas as pd
 import streamlit as st
+import plotly.graph_objects as go
 from streamlit_folium import st_folium
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -26,7 +27,11 @@ st.markdown("""
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap');
 .stApp{background:radial-gradient(ellipse at 15% 0%,#142c49 0%,#08111f 45%,#070d18 100%);color:#edf5ff;font-family:'DM Sans',sans-serif}
 [data-testid="stSidebar"]{background:#101d30;border-right:1px solid #263850}
-.block-container{max-width:1400px;padding-top:2rem;padding-bottom:3rem}
+.block-container{max-width:1400px;padding-top:2.2rem;padding-bottom:3rem}
+[data-testid="stHorizontalBlock"]{gap:1.25rem}
+[data-testid="stVerticalBlock"]{gap:1rem}
+.upload-guide,.result-card{margin:12px 0 20px}
+div[data-testid="stMetric"]{margin:5px 0 10px}
 h1,h2,h3{font-family:'Space Grotesk',sans-serif!important;color:#f3f8ff;letter-spacing:-.03em}
 h1{font-size:2.25rem!important} p,label{color:#a9bad0}
 div[data-testid="stMetric"]{background:linear-gradient(145deg,#17283e,#101c2d);border:1px solid #2a405b;padding:16px;border-radius:15px}
@@ -139,6 +144,48 @@ def friendly_status(value):
     if any(word in label for word in ("low", "light", "free")):
         return "Light traffic", "#34d47a"
     return str(value).replace("_", " ").title(), "#91a4bc"
+
+st.markdown("### 📈 Traffic speed trend")
+if not shown.empty and "current_speed_kmph" in shown.columns:
+    chart_roads = sorted(shown["location_id"].astype(str).unique())
+    chart_road = st.selectbox("Choose a location for the speed chart", chart_roads, key="csv_speed_chart_location")
+    chart_data = shown[shown["location_id"].astype(str) == chart_road].copy()
+    chart_data["timestamp_utc"] = pd.to_datetime(chart_data["timestamp_utc"], utc=True, errors="coerce")
+    chart_data["current_speed_kmph"] = pd.to_numeric(chart_data["current_speed_kmph"], errors="coerce")
+    chart_data = chart_data.dropna(subset=["timestamp_utc", "current_speed_kmph"]).sort_values("timestamp_utc")
+    if len(chart_data) >= 2:
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(
+            x=chart_data["timestamp_utc"], y=chart_data["current_speed_kmph"],
+            mode="lines+markers", name="Traffic speed",
+            line=dict(width=3, color="#4da3ff"),
+            fill="tozeroy", fillcolor="rgba(77,163,255,0.12)",
+            hovertemplate="%{x|%d %b, %H:%M}<br>Speed: %{y:.1f} km/h<extra></extra>",
+        ))
+        if "free_flow_speed_kmph" in chart_data.columns:
+            free_flow = pd.to_numeric(chart_data["free_flow_speed_kmph"], errors="coerce")
+            if free_flow.notna().any():
+                fig.add_trace(go.Scatter(
+                    x=chart_data["timestamp_utc"], y=free_flow,
+                    mode="lines", name="Usual free-flow speed",
+                    line=dict(width=2, dash="dash", color="#34d47a"),
+                    hovertemplate="Usual speed: %{y:.1f} km/h<extra></extra>",
+                ))
+        fig.update_layout(
+            height=320, margin=dict(l=8, r=8, t=18, b=8),
+            paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+            font=dict(color="#a9bad0"), xaxis_title="Time",
+            yaxis_title="Speed (km/h)", hovermode="x unified",
+            legend=dict(orientation="h", y=1.12, x=0),
+            xaxis=dict(showgrid=False),
+            yaxis=dict(showgrid=True, gridcolor="rgba(145,164,188,0.15)", rangemode="tozero"),
+        )
+        st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+        st.caption("A falling line means traffic is slowing down. The dashed line shows the usual free-flow speed when your CSV includes it.")
+    else:
+        st.info("At least two valid speed readings are needed to draw a trend for this location.")
+else:
+    st.info("This CSV does not contain usable current-speed readings, so a speed trend cannot be displayed.")
 
 st.markdown("### 🚦 Your traffic forecast")
 latest_by_road = shown.sort_values("timestamp_utc").drop_duplicates("location_id", keep="last")
