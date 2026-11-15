@@ -1,143 +1,262 @@
-# TrafficIQ — Kolkata Traffic Congestion Prediction System
+# 🚦 TrafficIQ — Kolkata Traffic Congestion Prediction System
 
-A simple machine-learning project that estimates road congestion in **Kolkata, India**, using real traffic and weather observations from external APIs. The project does **not** use physical roadside sensors.
+A Python machine-learning project that predicts road congestion in **Kolkata, India** using real-world traffic and weather observations from **TomTom Traffic API** and **OpenWeather API**. This project does **not** use physical roadside sensors.
 
-| Item | Project setup |
+## Quick links
+
+- **Download the complete project:** [Download ZIP](https://github.com/Tapas-Halder/traffic-congestion-prediction/archive/refs/heads/main.zip)
+- **Clone with Git:** `git clone https://github.com/Tapas-Halder/traffic-congestion-prediction.git`
+- **Online application:** [Streamlit Community Cloud](https://share.streamlit.io/) (deploy from this repository)
+- **Backend deployment:** Render (see [render.yaml](render.yaml))
+- **Frontend instructions:** [frontend/README.md](frontend/README.md)
+- **Backend instructions:** [backend/README.md](backend/README.md)
+- **ML instructions:** [ml/README.md](ml/README.md)
+
+## Project overview
+
+| Item | Technology / choice |
 |---|---|
-| Initial scope | Kolkata city |
-| Traffic source | TomTom Traffic API |
-| Weather source | OpenWeather API |
-| Prediction model | Random Forest classifier |
-| Prediction horizon | Approximately 15 minutes after an observation |
+| Initial study area | Kolkata, West Bengal, India |
+| Traffic data | TomTom Traffic API |
+| Weather data | OpenWeather API |
+| Physical sensors | Not used |
+| ML model | Random Forest classifier |
 | Backend | FastAPI |
 | Frontend | Streamlit |
-| Online deployment | FastAPI on Render; Streamlit Community Cloud |
-| ML implementation | Python `.py` files |
+| Online frontend hosting | Streamlit Community Cloud |
+| Backend hosting | Render |
+| ML code | Python `.py` files |
 
-## What the project does
+### How it works
 
-1. The online dashboard requests current traffic information from TomTom and weather information from OpenWeather through the FastAPI backend.
-2. The backend prepares the model input and obtains a congestion prediction.
-3. Streamlit presents the current information and prediction in a user-friendly dashboard.
-4. A separate CSV page lets a user upload a dataset and generate predictions.
-5. The local application can use the historical dataset included in the repository or a CSV selected by the user, without calling the live APIs.
+1. TomTom provides traffic observations and OpenWeather provides weather information.
+2. FastAPI receives the external data, prepares model inputs and calls the trained ML model.
+3. The Random Forest model predicts the traffic congestion level.
+4. Streamlit displays the current traffic information and prediction.
+5. The CSV page can also predict congestion from a user-uploaded CSV file.
 
-**Important:** an API observation is real-world data, but it is not a physical sensor installed by this project. Data availability and coverage depend on the external providers.
+**Data note:** API observations are real-world provider data. They are not readings from physical sensors installed by this project. Live results depend on API coverage, credentials, network access and provider limits.
 
 ## Main features
 
-- Live Kolkata traffic and weather view (when the APIs and backend are available).
-- ML-based congestion prediction.
-- CSV upload and prediction with downloadable results.
-- A local mode that uses files already downloaded to the computer.
-- A visitor counter for the public dashboard (where its backend storage is configured).
+- Live Kolkata traffic and weather dashboard (requires the online backend and valid API credentials).
+- Machine-learning congestion predictions.
+- CSV upload prediction and downloadable result.
+- Local offline mode using the historical dataset and model files stored on the computer.
+- Approximate visitor counter when its backend GitHub storage is configured.
 
 ## Project architecture
 
 ```text
-ONLINE
+ONLINE MODE
 TomTom Traffic API ─────┐
                         ├──> FastAPI backend ──> Random Forest model
 OpenWeather API ────────┘              │
                                        v
-                               Streamlit dashboard
+                              Streamlit dashboard
 
-CSV upload ──> preprocessing ──> ML model ──> prediction results
+CSV upload ──> validation/preprocessing ──> ML model ──> prediction CSV
 
-LOCAL
-Saved historical CSV / user CSV ──> local Streamlit app ──> ML model
+LOCAL OFFLINE MODE
+Saved historical CSV / user CSV ──> Local Streamlit app ──> ML model
 ```
 
-The local mode does not fetch live traffic or weather. To run it without internet, first download the repository and install its Python dependencies while internet access is available.
+## 1. Download the repository
 
-## Model performance — reported result and estimates
+Choose either method.
 
-The team has reported **83.33% accuracy** from a previous test. The test output has not yet been independently checked in this repository. The other values below are **estimates for documentation planning**, not metrics calculated from the test predictions.
+### Option A — Download ZIP (easiest for beginners)
+
+1. Open the [TrafficIQ GitHub repository](https://github.com/Tapas-Halder/traffic-congestion-prediction).
+2. Click the green **Code** button.
+3. Click **Download ZIP**.
+4. After downloading, right-click the ZIP file and choose **Extract All** (Windows).
+5. Open the extracted `traffic-congestion-prediction-main` folder.
+
+### Option B — Clone using Git
+
+Install Git first, then open Terminal / Command Prompt and run:
+
+```bash
+git clone https://github.com/Tapas-Halder/traffic-congestion-prediction.git
+cd traffic-congestion-prediction
+```
+
+## 2. Install Python and project requirements
+
+Use **Python 3.11** (recommended for this repository). During the first setup, the computer needs internet access to download Python packages. After installation, the local CSV prediction workflow can run without internet, provided the required data and model files are present or can be generated.
+
+Open a terminal inside the repository's main folder.
+
+### Windows
+
+```powershell
+py -3.11 -m venv .venv
+.venv\Scripts\activate
+python -m pip install --upgrade pip
+pip install -r requirements.txt
+```
+
+### macOS / Linux
+
+```bash
+python3.11 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+pip install -r requirements.txt
+```
+
+The root `requirements.txt` installs the dependencies used by the frontend, backend and ML workflow. Component-specific files are also provided: `frontend/requirements.txt`, `backend/requirements.txt`, and `ml/requirements.txt`.
+
+## 3. Run locally — Offline mode (no live API)
+
+This is the local mode for a computer without a running FastAPI server. It uses the saved historical Kolkata CSV and/or a CSV uploaded by the user. It does not call TomTom, OpenWeather or the live backend.
+
+From the **repository root**, with the virtual environment activated:
+
+```bash
+streamlit run frontend/local_app.py
+```
+
+Then:
+
+1. Streamlit will show a local address, normally `http://localhost:8501`.
+2. Open that address in your browser.
+3. In the sidebar, choose **Kolkata saved historical data** to use the repository dataset, or **Upload your own CSV** to select your file.
+4. View the predictions and download the result CSV.
+
+**Important offline notes**
+
+- Install dependencies before going offline.
+- The historical file expected by the project is `data/raw/kolkata_traffic_weather.csv`. Make sure it is included in your downloaded copy.
+- If the trained model artifact is not present, the CSV page attempts to prepare it from the included historical dataset. That requires the dataset and the ML dependencies.
+- Do not use `frontend/app.py` for offline mode: it is the online dashboard and expects the FastAPI backend for live data.
+- Offline mode does not show live traffic/weather and does not need TomTom/OpenWeather API keys.
+- Map background tiles and externally hosted fonts are not available offline; the prediction workflow itself is local.
+
+## 4. Run the online application locally (optional)
+
+Online mode needs working internet, API keys and two terminals.
+
+### Terminal 1 — Start FastAPI
+
+From the repository root:
+
+```bash
+python -m pip install -r backend/requirements.txt
+python backend/prepare_model.py
+uvicorn app.main:app --app-dir backend --reload
+```
+
+Set the following environment variables before starting the backend (use your own valid keys; never paste keys into source code):
+
+- `TOMTOM_API_KEY`
+- `OPENWEATHER_API_KEY`
+
+The backend's local health endpoint is `http://127.0.0.1:8000/health`.
+
+### Terminal 2 — Start Streamlit
+
+```bash
+streamlit run frontend/app.py
+```
+
+Open `http://localhost:8501`. The frontend's default backend URL is `http://127.0.0.1:8000`. For other configuration options, see [frontend/README.md](frontend/README.md).
+
+## 5. Online deployment
+
+### FastAPI backend — Render
+
+1. Connect this GitHub repository to Render.
+2. Use the backend settings defined in [render.yaml](render.yaml).
+3. Add `TOMTOM_API_KEY` and `OPENWEATHER_API_KEY` in Render's Environment settings.
+4. Deploy the backend and confirm its `/health` endpoint responds.
+
+The configured build command is:
+
+```bash
+pip install -r backend/requirements.txt && python backend/prepare_model.py
+```
+
+The configured start command is:
+
+```bash
+uvicorn app.main:app --app-dir backend --host 0.0.0.0 --port $PORT
+```
+
+### Streamlit frontend — Streamlit Community Cloud
+
+1. Open [Streamlit Community Cloud](https://share.streamlit.io/).
+2. Sign in with GitHub and select this repository.
+3. Set the main file path to `frontend/app.py`.
+4. Add `BACKEND_URL` in App settings → Secrets, using your deployed Render backend URL.
+5. Deploy the app.
+
+Never put TomTom/OpenWeather keys in the Streamlit frontend. Keep those keys on the backend service only.
+
+## 6. Repository structure
+
+```text
+traffic-congestion-prediction/
+├── backend/                 # FastAPI app and API integration
+│   ├── app/                 # API routes and services
+│   ├── requirements.txt
+│   └── prepare_model.py
+├── frontend/                # Streamlit user interfaces
+│   ├── app.py               # Online dashboard + CSV page
+│   ├── local_app.py         # Local offline entry point
+│   ├── csv_app.py           # CSV prediction interface
+│   └── requirements.txt
+├── ml/                      # ML implementation (.py files)
+│   ├── main.py
+│   ├── train_model.py
+│   ├── random_forest_model.py
+│   ├── csv_inference.py
+│   └── requirements.txt
+├── data/
+│   └── raw/                 # Historical Kolkata dataset
+├── documentation/           # Reports, presentation and screenshots
+├── other-files/             # Supporting project files and tests
+├── render.yaml              # Render deployment configuration
+├── requirements.txt         # Root / complete project dependencies
+└── README.md
+```
+
+## 7. Model performance — read carefully
+
+The team has reported **83.33% accuracy** from a previous test. That test output has not yet been independently verified in this repository. Other values below are estimates for documentation planning, not measured results.
 
 | Metric | Value | Status |
 |---|---:|---|
-| Accuracy | **83.33%** | Team-reported; test output not yet verified |
+| Accuracy | **83.33%** | Team-reported; output not independently verified |
 | Precision | **84.00%** | Estimated |
 | Recall | **83.33%** | Estimated |
 | F1-score | **83.66%** | Estimated |
 | Macro F1-score | **83.50%** | Estimated |
 
-**Important:** Do not describe the estimated precision, recall or F1 values as measured results. They must be replaced with the actual values from a held-out test evaluation before making a final performance claim.
+An earlier held-out evaluation recorded in the repository reported 60.22% accuracy, 54.81% macro F1-score and a 79.77% majority-class baseline. This is a separate evaluation run and has not yet been reconciled with the later team-reported result. Do not combine results from different runs or describe estimated values as measured results.
 
-For context, an earlier held-out evaluation already recorded in this repository reported 60.22% accuracy, 54.81% macro F1-score and a 79.77% majority-class baseline. That is a separate recorded evaluation and has not been reconciled with the team's later-reported 83.33% result. Keep the two test runs distinct until their datasets, split method and output reports are compared.
+The prediction target is approximately 15 minutes after the input observation timestamp. It is not necessarily 15 minutes after a user opens the dashboard. See [ml/README.md](ml/README.md) for model details.
 
-Accuracy alone can be misleading when congestion classes are imbalanced. Before final submission, rerun evaluation on a held-out test set and preserve the classification report, confusion matrix, test date/split details and output file. Do not change or inflate measured metrics to make the result look better.
+## 8. Team collaboration
 
-The prediction target is tied to the input observation timestamp: approximately 15 minutes after that observation. It does not necessarily mean 15 minutes from the time a user opens the dashboard. Model performance and data coverage outside Kolkata have not been established.
+The team leader maintains the `main` branch. Other members should create their own feature branches, commit their changes and open Pull Requests. The team leader reviews and tests each Pull Request before merging it into `main`.
 
-## Repository structure
+## 9. Security
 
-```text
-.
-├── backend/                 # FastAPI app and external API integrations
-├── frontend/                # Streamlit online, CSV and local interfaces
-├── ml/                      # Python ML preprocessing, training and inference
-├── data/
-│   ├── raw/                 # Historical source data
-│   └── processed/           # Generated cleaned data (if created)
-├── documentation/           # Project report, presentation and supporting docs
-└── README.md
-```
+- Never upload API keys, GitHub tokens, passwords or private credentials to GitHub.
+- Store backend API keys in Render Environment settings or a local untracked `.env` file.
+- Do not put secrets in screenshots, documentation or frontend code.
+- If a key is accidentally committed, revoke/rotate it immediately.
 
-See the README files inside `backend/`, `frontend/`, and `ml/` (where present) for component-specific instructions. Generated model artifacts and processed files may be created during setup and are not necessarily committed to Git.
+## 10. Known limitations
 
-## Online deployment
+- Kolkata is the initial target area; other-city performance has not been validated.
+- Live information depends on TomTom/OpenWeather API coverage and availability.
+- Offline mode uses saved data; it cannot provide live traffic or weather.
+- The reported 83.33% accuracy and estimated supporting metrics must be verified against the exact held-out test output.
+- The visitor counter is an approximate visit/session counter, not a verified count of unique people.
 
-### FastAPI backend — Render
+## Help
 
-Configure the service using the actual backend entry point and requirements file in the repository. Set the following environment variables in Render's Environment settings:
-
-- `TOMTOM_API_KEY`
-- `OPENWEATHER_API_KEY`
-- `CITY=Kolkata`
-- `LATITUDE=22.5726`
-- `LONGITUDE=88.3639`
-
-Use the repository's current Render start/build configuration. Do not copy API keys into source code, README files, screenshots, or Git commits.
-
-### Streamlit frontend — Streamlit Community Cloud
-
-Deploy the Streamlit entry-point file configured for the online application. Set its backend URL using Streamlit Secrets (for example, `BACKEND_URL`) to the deployed FastAPI service URL. The exact entry-point path should match the current repository configuration.
-
-## Local run
-
-The local-only interface is intended to run with saved data and the locally available model/dependencies. First clone or download the repository and install dependencies while online. Then follow the current local instructions in the frontend and ML README files. Do not expect live TomTom/OpenWeather data when offline.
-
-## Data and privacy
-
-- Never commit API keys, GitHub tokens, passwords or other secrets.
-- Keep secrets in Render Environment settings or the relevant deployment secret manager.
-- Use only the columns and formats accepted by the current CSV prediction implementation; consult the frontend/ML instructions before preparing a CSV.
-- External API availability, rate limits and data licensing/coverage may affect live results.
-
-## Visitor counter
-
-The visitor counter is an approximate application visit/session counter, not a verified count of unique people. When `VISITS_GITHUB_TOKEN` is configured on the FastAPI backend, each new browser session updates `data/visits.json` directly on the repository's `main` branch using the GitHub Contents API. Visitor-count updates do not create Pull Requests and do not use a separate data branch.
-
-Configure these variables in the Render backend environment:
-- `VISITS_GITHUB_TOKEN`: fine-grained GitHub token with Contents read/write permission for this repository.
-- `VISITS_GITHUB_REPO`: `Tapas-Halder/traffic-congestion-prediction` (optional default).
-- `VISITS_GITHUB_PATH`: `data/visits.json` (optional default).
-
-If you previously added `VISITS_GITHUB_BRANCH`, remove that old environment variable; the counter always writes to `main`. Keep the token only in Render Environment settings and never commit it or put it in Streamlit frontend secrets. Without the token, local SQLite storage is used instead. GitHub API rate limits apply, so this is suitable for a small project/demo counter, not high-traffic production analytics.
-
-## Team collaboration
-
-The team leader maintains the main branch. Other members should work on separate branches, commit their changes and open Pull Requests. The team leader reviews and tests each change before merging it into `main`.
-
-## Limitations and future improvements
-
-- The currently recorded model evaluation is below the majority-class baseline.
-- Model quality depends on the amount, quality, balance and representativeness of historical observations.
-- External API coverage and availability can vary by road and time.
-- Kolkata is the initial target area; other-city performance is not validated.
-- Future work should focus on stronger time-aware validation, class-wise metrics, better balanced training data, comparison with simple baselines, and more historical observations.
-
-## Project status
-
-This is an academic prototype demonstrating an API-connected traffic dashboard and a machine-learning workflow. Report only tests that were actually run, and use genuine screenshots from the running application as submission evidence.
+For component-specific setup and troubleshooting, open [frontend/README.md](frontend/README.md), [backend/README.md](backend/README.md), or [ml/README.md](ml/README.md).
