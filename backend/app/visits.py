@@ -1,8 +1,8 @@
 """Approximate public dashboard visit counter.
 
-If VISITS_GITHUB_TOKEN is configured, the aggregate count is stored in a
-small JSON file on a dedicated GitHub data branch. No visitor identity,
-IP address, cookie or user-agent is stored. SQLite remains available as a
+If VISITS_GITHUB_TOKEN is configured, the aggregate count is stored in
+data/visits.json directly on the main branch. No visitor identity, IP
+address, cookie or user-agent is stored. SQLite remains available as a
 local-development fallback.
 """
 from __future__ import annotations
@@ -20,7 +20,7 @@ import requests
 _DB_PATH = os.getenv("VISITS_DB_PATH", "visits.db")
 _GITHUB_TOKEN = os.getenv("VISITS_GITHUB_TOKEN", "").strip()
 _GITHUB_REPO = os.getenv("VISITS_GITHUB_REPO", "Tapas-Halder/traffic-congestion-prediction").strip()
-_GITHUB_BRANCH = os.getenv("VISITS_GITHUB_BRANCH", "traffic-visit-data").strip()
+_GITHUB_BRANCH = "main"
 _GITHUB_PATH = os.getenv("VISITS_GITHUB_PATH", "data/visits.json").strip()
 _GITHUB_API = "https://api.github.com"
 _LOCK = threading.Lock()
