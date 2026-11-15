@@ -113,7 +113,14 @@ The local-only interface is intended to run with saved data and the locally avai
 
 ## Visitor counter
 
-The visitor counter is an approximate application visit/session counter, not a verified count of unique people. Persistent GitHub-backed storage requires its optional backend configuration and a token with the minimum required repository permissions. Keep that token only in backend secrets. Without persistent storage configured, the displayed count may not persist across restarts or deployments.
+The visitor counter is an approximate application visit/session counter, not a verified count of unique people. When `VISITS_GITHUB_TOKEN` is configured on the FastAPI backend, each new browser session updates `data/visits.json` directly on the repository's `main` branch using the GitHub Contents API. Visitor-count updates do not create Pull Requests and do not use a separate data branch.
+
+Configure these variables in the Render backend environment:
+- `VISITS_GITHUB_TOKEN`: fine-grained GitHub token with Contents read/write permission for this repository.
+- `VISITS_GITHUB_REPO`: `Tapas-Halder/traffic-congestion-prediction` (optional default).
+- `VISITS_GITHUB_PATH`: `data/visits.json` (optional default).
+
+If you previously added `VISITS_GITHUB_BRANCH`, remove that old environment variable; the counter always writes to `main`. Keep the token only in Render Environment settings and never commit it or put it in Streamlit frontend secrets. Without the token, local SQLite storage is used instead. GitHub API rate limits apply, so this is suitable for a small project/demo counter, not high-traffic production analytics.
 
 ## Team collaboration
 
