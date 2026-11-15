@@ -1,6 +1,7 @@
 """TrafficIQ public Streamlit entrypoint.
 
 The dashboard page calls the deployed FastAPI backend for live Kolkata data.
+The map page restores the interactive Kolkata map and route planner.
 The CSV page runs the repository's Python ML model against an uploaded CSV.
 No API credentials are stored in Streamlit or the repository.
 """
@@ -23,6 +24,11 @@ pages = {
             title="Live Kolkata Dashboard",
             icon="🚦",
             default=True,
+        ),
+        st.Page(
+            str(HERE / "pages" / "3_Route_Map.py"),
+            title="Kolkata Map & Route Planner",
+            icon="🗺️",
         ),
     ],
     "CSV Prediction": [
