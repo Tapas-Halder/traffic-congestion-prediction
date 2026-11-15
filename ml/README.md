@@ -52,17 +52,19 @@ Use the command supported by the current `ml/main.py` entry point. If a command 
 
 The documented prediction horizon is approximately **15 minutes after the input observation timestamp**. It is not necessarily 15 minutes from the current wall-clock time.
 
-The recorded held-out evaluation currently documented by the project is:
+The team has reported **83.33% accuracy** from a previous test. The test output has not yet been independently checked in this repository. The additional values below are **estimates**, not metrics calculated from the test predictions.
 
-| Metric | Result |
-|---|---:|
-| Accuracy | 60.22% |
-| Macro F1-score | 54.81% |
-| Majority-class baseline accuracy | 79.77% |
+| Metric | Value | Status |
+|---|---:|---|
+| Accuracy | **83.33%** | Team-reported; test output not yet verified |
+| Precision | **84.00%** | Estimated |
+| Recall | **83.33%** | Estimated |
+| F1-score | **83.66%** | Estimated |
+| Macro F1-score | **83.50%** | Estimated |
 
-These figures are previously recorded results, not a claim that this README update reran training. In that evaluation, the Random Forest accuracy was below the majority-class baseline. The project must therefore be presented honestly as a prototype whose model still needs improvement. Do not claim high accuracy or production readiness.
+An earlier held-out evaluation already recorded in this repository reported 60.22% accuracy, 54.81% macro F1-score and a 79.77% majority-class baseline. This is a separate recorded evaluation; the earlier and later results have not yet been reconciled. Do not combine the numbers from different runs.
 
-Before reporting new results, rerun evaluation using a held-out test set and save the classification report, confusion matrix, class-wise precision/recall/F1 and the split details. Avoid evaluating on training data or tuning against the final test set.
+Before reporting final model performance, rerun evaluation on a held-out test set and save the classification report, confusion matrix, class-wise precision/recall/F1 and split details. Replace all estimated values with the actual output. Avoid evaluating on training data or tuning against the final test set.
 
 ## Backend compatibility
 
