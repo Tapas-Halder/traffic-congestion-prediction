@@ -40,3 +40,10 @@ Render start: `uvicorn app.main:app --app-dir backend --host 0.0.0.0 --port $POR
 Streamlit: `frontend/app.py` with `frontend/requirements.txt`.
 
 The previous GitHub Actions workflows are saved in `Backup`. Automatic data collection is paused.
+
+
+## Model performance note
+
+The team has reported 83.33% accuracy from a previous test. This result has not yet been independently verified in the repository. For documentation planning, the team is using estimated precision (84.00%), recall (83.33%), F1-score (83.66%) and macro F1-score (83.50%). These four values are estimates, not measured evaluation results.
+
+An earlier held-out evaluation recorded in the repository reported 60.22% accuracy, 54.81% macro F1-score and a 79.77% majority-class baseline. Treat this as a separate test run until the test datasets and reports are compared. Use actual held-out test output for any final performance claim.

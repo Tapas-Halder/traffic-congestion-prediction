@@ -98,7 +98,7 @@ shows the exact JSON the dashboard received — use it to verify.
 ## Not done yet (by design, per the guide)
 
 - Real routes / ETAs — needs the TomTom Routing API.
-- ML performance metrics — shown only once the ML team provides verified numbers.
+- The README documents a team-reported 83.33% accuracy and estimated supporting scores; these are not displayed as verified performance metrics in the dashboard.
 - More than 5 locations, forecast horizons, advanced charts.
 
 ## Testing
@@ -139,3 +139,8 @@ If the dashboard says **backend did not respond within 3 seconds**, you are usin
 Check `https://kolkata-traffic-api.onrender.com/health` first. A slow first request can be normal on a sleeping free Render instance. If it never responds, inspect Render **Logs**, the service's deployed branch, its **build command** (`pip install -r backend/requirements.txt && python backend/prepare_model.py`) and **start command** (`uvicorn app.main:app --app-dir backend --host 0.0.0.0 --port $PORT`). Check `/api/v1/model/status` and `/api/v1/data/current` separately. A successful health check does not prove that TomTom/OpenWeather keys or the ML model work.
 
 GitHub Actions CI and collection workflows were removed from `main` to preserve the five-folder root layout. They are available in the `Backup` branch; the collector is intentionally paused. Offline tests: `python ml/test_model.py` and `python other-files/tests/test_integration.py`.
+
+
+## Model performance note
+
+The team has reported 83.33% accuracy from a previous test. The README files also list estimated precision (84.00%), recall (83.33%), F1-score (83.66%) and macro F1-score (83.50%). These supporting scores are estimates, not calculated results, and must not be presented as verified metrics. An earlier held-out evaluation recorded in the repository reported 60.22% accuracy; the two test runs have not yet been reconciled. The frontend does not display these estimates as confirmed model performance.
