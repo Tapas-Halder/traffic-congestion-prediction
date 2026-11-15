@@ -1,0 +1,23 @@
+# TrafficIQ complete project dependencies
+# Recommended Python version: 3.11
+# Install from the repository root: python -m pip install -r requirements.txt
+
+# Streamlit frontend and CSV visualization
+streamlit>=1.36.0
+plotly>=5.18.0
+folium>=0.15.0
+streamlit-folium>=0.18.0
+
+# Data processing and machine learning
+pandas>=2.0,<3.0
+numpy>=1.24,<3.0
+scikit-learn>=1.4,<2.0
+joblib>=1.4,<2.0
+matplotlib>=3.7,<4.0
+
+# FastAPI backend and external API requests
+fastapi>=0.115,<1.0
+uvicorn[standard]>=0.30,<1.0
+requests>=2.32,<3.0
+python-dotenv>=1.0,<2.0
+httpx>=0.27,<1.0
