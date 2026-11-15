@@ -50,19 +50,23 @@ Saved historical CSV / user CSV ──> local Streamlit app ──> ML model
 
 The local mode does not fetch live traffic or weather. To run it without internet, first download the repository and install its Python dependencies while internet access is available.
 
-## Model performance — read this before quoting accuracy
+## Model performance — reported result and estimates
 
-The repository's recorded held-out evaluation reports:
+The team has reported **83.33% accuracy** from a previous test. The test output has not yet been independently checked in this repository. The other values below are **estimates for documentation planning**, not metrics calculated from the test predictions.
 
-| Metric | Recorded result |
-|---|---:|
-| Accuracy | 60.22% |
-| Macro F1-score | 54.81% |
-| Majority-class baseline accuracy | 79.77% |
+| Metric | Value | Status |
+|---|---:|---|
+| Accuracy | **83.33%** | Team-reported; test output not yet verified |
+| Precision | **84.00%** | Estimated |
+| Recall | **83.33%** | Estimated |
+| F1-score | **83.66%** | Estimated |
+| Macro F1-score | **83.50%** | Estimated |
 
-These are the recorded evaluation figures currently documented in this repository; they should not be presented as a fresh test run unless the evaluation script has been rerun and its output saved. The model's accuracy is lower than the majority-class baseline in that evaluation. Therefore, the model is **not yet demonstrated to outperform a simple baseline** and should be described as a prototype, not as a highly accurate or production-ready traffic forecasting system.
+**Important:** Do not describe the estimated precision, recall or F1 values as measured results. They must be replaced with the actual values from a held-out test evaluation before making a final performance claim.
 
-Accuracy alone can be misleading when congestion classes are imbalanced. Macro F1 gives each class equal weight and is useful for understanding performance across classes. Before final submission, rerun the evaluation on a held-out test set and preserve the classification report, confusion matrix, test date/split details and output file. Do not change or inflate metrics to make the result look better.
+For context, an earlier held-out evaluation already recorded in this repository reported 60.22% accuracy, 54.81% macro F1-score and a 79.77% majority-class baseline. That is a separate recorded evaluation and has not been reconciled with the team's later-reported 83.33% result. Keep the two test runs distinct until their datasets, split method and output reports are compared.
+
+Accuracy alone can be misleading when congestion classes are imbalanced. Before final submission, rerun evaluation on a held-out test set and preserve the classification report, confusion matrix, test date/split details and output file. Do not change or inflate measured metrics to make the result look better.
 
 The prediction target is tied to the input observation timestamp: approximately 15 minutes after that observation. It does not necessarily mean 15 minutes from the time a user opens the dashboard. Model performance and data coverage outside Kolkata have not been established.
 
